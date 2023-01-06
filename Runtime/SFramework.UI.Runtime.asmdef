@@ -1,0 +1,17 @@
+{
+    "name": "SFramework.UI.Runtime",
+    "rootNamespace": "SFramework.UI.Runtime",
+    "references": [
+        "SFramework.Core.Runtime",
+        "Sirenix.OdinInspector.CompatibilityLayer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

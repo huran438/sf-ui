@@ -18,7 +18,10 @@ namespace SFramework.UI.Runtime
         [SFType(typeof(SFUIDatabase), 2)]
         [SerializeField]
         private string _screen;
-
+        
+        [SerializeField]
+        private bool _showOnInit;
+        
         private Canvas _canvas;
         private CanvasGroup _canvasGroup;
 
@@ -28,9 +31,9 @@ namespace SFramework.UI.Runtime
         {
             _canvas = GetComponent<Canvas>();
             _canvasGroup = GetComponent<CanvasGroup>();
-            _canvasGroup.alpha = 0f;
-            _canvasGroup.interactable = false;
-            _canvasGroup.blocksRaycasts = false;
+            _canvasGroup.alpha = _showOnInit ? 1f : 0f;
+            _canvasGroup.interactable = _showOnInit;
+            _canvasGroup.blocksRaycasts = _showOnInit;
             base.Awake();
         }
 

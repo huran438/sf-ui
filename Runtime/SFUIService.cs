@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using SFramework.Core.Runtime;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace SFramework.UI.Runtime
 {
@@ -13,6 +14,8 @@ namespace SFramework.UI.Runtime
         public event Action<string> OnCloseScreen = _ => { };
         public event Action<string> OnScreenShown = _ => { };
         public event Action<string> OnScreenClosed = _ => { };
+        public event Action<string, SFBaseEventType, BaseEventData> OnWidgetBaseEvent = (_, _, _) => { };
+        public event Action<string, SFPointerEventType, PointerEventData> OnWidgetPointerEvent = (_, _, _) => { };
 
         private Dictionary<string, SFScreenState> _screenStates = new();
         private Dictionary<string, GameObject> _screenRootGameObjects = new();
@@ -22,6 +25,15 @@ namespace SFramework.UI.Runtime
         [SFInject]
         public void Init(SFUIDatabase database)
         {
+            foreach (SFScreenGroupContainer screenGroupContainer in database.Nodes)
+            {
+                foreach (SFScreenContainer screenContainer in screenGroupContainer.Children)
+                {
+                    foreach (SFWidgetContainer widgetContainer in screenContainer.Children)
+                    {
+                    }
+                }
+            }
         }
 
         public void ShowScreen(string screen)
@@ -80,6 +92,18 @@ namespace SFramework.UI.Runtime
             if (string.IsNullOrWhiteSpace(sfScreen)) return;
             _screenStates[sfScreen] = SFScreenState.Closed;
             OnScreenClosed.Invoke(sfScreen);
+        }
+
+        public void WidgetEventCallback(string widget, SFBaseEventType eventType, BaseEventData eventData)
+        {
+            if (string.IsNullOrWhiteSpace(widget)) return;
+            OnWidgetBaseEvent.Invoke(widget, eventType, eventData);
+        }
+
+        public void WidgetEventCallback(string widget, SFPointerEventType eventType, PointerEventData eventData)
+        {
+            if (string.IsNullOrWhiteSpace(widget)) return;
+            OnWidgetPointerEvent.Invoke(widget, eventType, eventData);
         }
     }
 }

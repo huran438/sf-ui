@@ -1,12 +1,13 @@
 ﻿using System;
 using SFramework.Core.Runtime;
+using SFramework.Repositories.Runtime;
 using UnityEngine;
 
 namespace SFramework.UI.Runtime
 {
     [Serializable]
-    public sealed class SFWidgetContainer : SFDatabaseNode
+    public sealed class SFWidgetNode : SFNode
     {
-        public override ISFDatabaseNode[] Children => null;
+        public override ISFNode[] Nodes => null;
     }
 }

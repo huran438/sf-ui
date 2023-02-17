@@ -15,7 +15,7 @@ namespace SFramework.UI.Runtime
 
         protected SFScreenState State => _uiServiceInternal.GetScreenState(_screen);
 
-        [SFType(typeof(SFUIDatabase), 2)]
+        [SFScreen]
         [SerializeField]
         private string _screen;
         

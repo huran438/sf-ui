@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using SFramework.Core.Runtime;
+using SFramework.Repositories.Runtime;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -22,14 +24,17 @@ namespace SFramework.UI.Runtime
 
         private bool _isLoaded;
 
+
         [SFInject]
-        public void Init(SFUIDatabase database)
+        private void Init(ISFRepositoryProvider provider)
         {
-            foreach (SFScreenGroupContainer screenGroupContainer in database.Nodes)
+            var _repository = provider.GetRepositories<SFUIRepository>().FirstOrDefault();
+
+            foreach (SFScreenGroupNode groupNode in _repository.Nodes)
             {
-                foreach (SFScreenContainer screenContainer in screenGroupContainer.Children)
+                foreach (SFScreenNode screenNode in groupNode.Nodes)
                 {
-                    foreach (SFWidgetContainer widgetContainer in screenContainer.Children)
+                    foreach (SFWidgetNode widgetNode in screenNode.Nodes)
                     {
                     }
                 }

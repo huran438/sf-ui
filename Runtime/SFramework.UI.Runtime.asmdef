@@ -3,7 +3,7 @@
     "rootNamespace": "SFramework.UI.Runtime",
     "references": [
         "SFramework.Core.Runtime",
-        "Sirenix.OdinInspector.CompatibilityLayer"
+        "SFramework.Repositories.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

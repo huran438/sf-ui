@@ -20,7 +20,7 @@ namespace SFramework.UI.Runtime
         private string _screen;
         
         [SerializeField]
-        private bool _showOnInit;
+        private bool _visibleByDefault;
         
         private Canvas _canvas;
         private CanvasGroup _canvasGroup;
@@ -31,9 +31,9 @@ namespace SFramework.UI.Runtime
         {
             _canvas = GetComponent<Canvas>();
             _canvasGroup = GetComponent<CanvasGroup>();
-            _canvasGroup.alpha = _showOnInit ? 1f : 0f;
-            _canvasGroup.interactable = _showOnInit;
-            _canvasGroup.blocksRaycasts = _showOnInit;
+            _canvasGroup.alpha = _visibleByDefault ? 1f : 0f;
+            _canvasGroup.interactable = _visibleByDefault;
+            _canvasGroup.blocksRaycasts = _visibleByDefault;
             base.Awake();
         }
 

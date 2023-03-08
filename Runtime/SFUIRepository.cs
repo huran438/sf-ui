@@ -18,7 +18,7 @@ namespace SFramework.UI.Runtime
             {
                 foreach (var layer1 in layer0.Screens)
                 {
-                    screens.Add($"{_Name}/{layer0._Name}/{layer1._Name}");
+                    screens.Add($"{Name}/{layer0.Name}/{layer1.Name}");
                 }
             }
 
@@ -30,7 +30,7 @@ namespace SFramework.UI.Runtime
                 {
                     foreach (var layer2 in layer1.Widgets)
                     {
-                        widgets.Add($"{_Name}/{layer0._Name}/{layer1._Name}/{layer2._Name}");
+                        widgets.Add($"{Name}/{layer0.Name}/{layer1.Name}/{layer2.Name}");
                     }
                 }
             }

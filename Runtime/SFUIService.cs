@@ -1,14 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using SFramework.Core.Runtime;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using SFramework.Repositories.Runtime;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 using UnityEngine.EventSystems;
+using UnityEngine.ResourceManagement.AsyncOperations;
+using SFExtensions = SFramework.Repositories.Runtime.SFExtensions;
 
 namespace SFramework.UI.Runtime
 {
+    public class SFUIServiceAssetNotFoundException : Exception
+    {
+    }
+
     public sealed class SFUIService : ISFUIService
+
     {
         public bool IsLoaded => _isLoaded;
 
@@ -19,26 +27,94 @@ namespace SFramework.UI.Runtime
         public event Action<string, SFBaseEventType, BaseEventData> OnWidgetBaseEvent = (_, _, _) => { };
         public event Action<string, SFPointerEventType, PointerEventData> OnWidgetPointerEvent = (_, _, _) => { };
 
+        private Dictionary<string, AsyncOperationHandle> _loadedScreens = new();
         private Dictionary<string, SFScreenState> _screenStates = new();
         private Dictionary<string, GameObject> _screenRootGameObjects = new();
+        private Dictionary<string, SFScreenNode> _screenNodes = new();
+        private Dictionary<string, SFWidgetNode> _widgetNodes = new();
 
         private bool _isLoaded;
 
-
-        [SFInject]
-        private void Init(ISFRepositoryProvider provider)
+        public SFUIService(ISFRepositoryProvider provider)
         {
-            var _repository = provider.GetRepositories<SFUIRepository>().FirstOrDefault();
+            var repositories = provider.GetRepositories<SFUIRepository>();
 
-            foreach (SFScreenGroupNode groupNode in _repository.Nodes)
+            foreach (var repository in repositories)
             {
-                foreach (SFScreenNode screenNode in groupNode.Nodes)
+                foreach (SFScreenGroupNode groupNode in repository.Nodes)
                 {
-                    foreach (SFWidgetNode widgetNode in screenNode.Nodes)
+                    foreach (SFScreenNode screenNode in groupNode.Nodes)
                     {
+                        var screen = SFExtensions.GetSFId(repository.Name, groupNode.Name, screenNode.Name);
+                        _screenNodes.TryAdd(screen, screenNode);
+                        foreach (SFWidgetNode widgetNode in screenNode.Nodes)
+                        {
+                            var widget = SFExtensions.GetSFId(repository.Name, groupNode.Name, screenNode.Name,
+                                widgetNode.Name);
+                            _widgetNodes.TryAdd(widget, widgetNode);
+                        }
                     }
                 }
             }
+        }
+
+        public async UniTask LoadScreen(string screen, bool show = false ,Action onResult = null, IProgress<float> progress = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(screen))
+                throw new ArgumentNullException(nameof(screen));
+
+            if (_loadedScreens.TryGetValue(screen, out _)) return;
+
+            if (!_screenNodes.TryGetValue(screen, out var screenNode))
+            {
+                throw new NullReferenceException("Failed to load screen node: " + screen);
+            }
+
+            var handle = Addressables.InstantiateAsync(screenNode.Prefab);
+
+            _loadedScreens[screen] = handle;
+
+            while (!handle.IsDone && !cancellationToken.IsCancellationRequested)
+            {
+                progress?.Report(handle.PercentComplete);
+                await UniTask.Yield(cancellationToken);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                Addressables.Release(handle);
+                _loadedScreens.Remove(screen);
+                throw new OperationCanceledException();
+            }
+
+            if (handle.Status == AsyncOperationStatus.Failed)
+            {
+                Addressables.Release(handle);
+                _loadedScreens.Remove(screen);
+                throw new NullReferenceException("Failed to load screen: " + screen);
+            }
+
+            onResult?.Invoke();
+
+            if (show)
+            {
+                _screenStates[screen] = SFScreenState.Showing;
+                OnShowScreen.Invoke(screen);
+            }
+        }
+
+        public void UnloadScreen(string screen, Action onResult = null)
+        {
+            if (string.IsNullOrEmpty(screen))
+                throw new ArgumentNullException(nameof(screen));
+
+            if (!_loadedScreens.ContainsKey(screen))
+                throw new Exception("Screen not loaded: " + screen);
+
+            Addressables.Release(_loadedScreens[screen]);
+            _loadedScreens.Remove(screen);
+            onResult?.Invoke(); ;
         }
 
         public void ShowScreen(string screen)

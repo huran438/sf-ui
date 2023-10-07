@@ -3,7 +3,10 @@
     "rootNamespace": "SFramework.UI.Runtime",
     "references": [
         "SFramework.Core.Runtime",
-        "SFramework.Repositories.Runtime"
+        "SFramework.Repositories.Runtime",
+        "Unity.Addressables",
+        "UniTask",
+        "Unity.ResourceManager"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

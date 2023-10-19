@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using SFramework.Repositories.Runtime;
+using SFramework.Configs.Runtime;
+using SFramework.Core.Runtime;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.EventSystems;
 using UnityEngine.ResourceManagement.AsyncOperations;
-using SFExtensions = SFramework.Repositories.Runtime.SFExtensions;
 
 namespace SFramework.UI.Runtime
 {
@@ -35,9 +35,9 @@ namespace SFramework.UI.Runtime
 
         private bool _isLoaded;
 
-        public SFUIService(ISFRepositoryProvider provider)
+        SFUIService(ISFConfigsService provider)
         {
-            var repositories = provider.GetRepositories<SFUIRepository>();
+            var repositories = provider.GetRepositories<SFUIConfig>();
 
             foreach (var repository in repositories)
             {
@@ -45,11 +45,11 @@ namespace SFramework.UI.Runtime
                 {
                     foreach (SFScreenNode screenNode in groupNode.Nodes)
                     {
-                        var screen = SFExtensions.GetSFId(repository.Name, groupNode.Name, screenNode.Name);
+                        var screen = SFConfigsExtensions.GetSFId(repository.Name, groupNode.Name, screenNode.Name);
                         _screenNodes.TryAdd(screen, screenNode);
                         foreach (SFWidgetNode widgetNode in screenNode.Nodes)
                         {
-                            var widget = SFExtensions.GetSFId(repository.Name, groupNode.Name, screenNode.Name,
+                            var widget = SFConfigsExtensions.GetSFId(repository.Name, groupNode.Name, screenNode.Name,
                                 widgetNode.Name);
                             _widgetNodes.TryAdd(widget, widgetNode);
                         }
@@ -58,7 +58,7 @@ namespace SFramework.UI.Runtime
             }
         }
 
-        public async UniTask LoadScreen(string screen, bool show = false ,Action onResult = null, IProgress<float> progress = null,
+        public async UniTask LoadScreen(string screen, bool show = false, Action onResult = null, IProgress<float> progress = null,
             CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(screen))
@@ -114,7 +114,8 @@ namespace SFramework.UI.Runtime
 
             Addressables.Release(_loadedScreens[screen]);
             _loadedScreens.Remove(screen);
-            onResult?.Invoke(); ;
+            onResult?.Invoke();
+            ;
         }
 
         public void ShowScreen(string screen)
@@ -185,6 +186,11 @@ namespace SFramework.UI.Runtime
         {
             if (string.IsNullOrWhiteSpace(widget)) return;
             OnWidgetPointerEvent.Invoke(widget, eventType, eventData);
+        }
+
+        public void Dispose()
+        {
+            // TODO release managed resources here
         }
     }
 }

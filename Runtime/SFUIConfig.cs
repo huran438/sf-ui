@@ -1,14 +1,14 @@
 ﻿using System.Collections.Generic;
+using SFramework.Configs.Runtime;
 using SFramework.Core.Runtime;
-using SFramework.Repositories.Runtime;
 
 namespace SFramework.UI.Runtime
 {
-    public sealed class SFUIRepository : SFRepository, ISFRepositoryGenerator
+    public sealed class SFUIConfig : SFConfig, ISFConfigsGenerator
     {
         public SFScreenGroupNode[] Groups;
 
-        public override ISFNode[] Nodes => Groups;
+        public override ISFConfigNode[] Nodes => Groups;
 
         public void GetGenerationData(out SFGenerationData[] generationData)
         {

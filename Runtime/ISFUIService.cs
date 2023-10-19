@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using SFramework.Core.Runtime;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace SFramework.UI.Runtime
 {
-    public interface ISFUIService
+    public interface ISFUIService : ISFService
     {
         bool IsLoaded { get; }
         event Action<string> OnShowScreen;

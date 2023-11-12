@@ -118,7 +118,7 @@ namespace SFramework.UI.Runtime
         {
             if (string.IsNullOrWhiteSpace(screen))
             {
-                await LoadScreen(screen, false, progress, cancellationToken);
+                await LoadScreen(screen, true, progress, cancellationToken);
                 return;
             }
 

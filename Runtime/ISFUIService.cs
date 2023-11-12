@@ -16,15 +16,10 @@ namespace SFramework.UI.Runtime
         event Action<string> OnScreenClosed;
         event Action<string, SFBaseEventType, BaseEventData> OnWidgetBaseEvent;
         event Action<string, SFPointerEventType, PointerEventData> OnWidgetPointerEvent;
-
-
-        UniTask LoadScreen(string screen, bool show = false,Action onResult = null, IProgress<float> progress = null,
-            CancellationToken cancellationToken = default);
-
-        void UnloadScreen(string screen, Action onResult = null);
-
-        void ShowScreen(string screen);
-        void CloseScreen(string screen);
+        UniTask LoadScreen(string screen, bool show = false, IProgress<float> progress = null, CancellationToken cancellationToken = default);
+        void UnloadScreen(string screen);
+        UniTask ShowScreen(string screen, IProgress<float> progress = null, CancellationToken cancellationToken = default);
+        void CloseScreen(string screen, bool unload = false);
         SFScreenState GetScreenState(string screen);
         GameObject GetScreenRootGO(string screen);
         void Register(string screen, GameObject root);

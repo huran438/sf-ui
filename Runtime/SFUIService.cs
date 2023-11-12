@@ -58,7 +58,7 @@ namespace SFramework.UI.Runtime
             }
         }
 
-        public async UniTask LoadScreen(string screen, bool show = false, Action onResult = null, IProgress<float> progress = null,
+        public async UniTask LoadScreen(string screen, bool show = false, IProgress<float> progress = null,
             CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(screen))
@@ -94,9 +94,7 @@ namespace SFramework.UI.Runtime
                 _loadedScreens.Remove(screen);
                 throw new NullReferenceException("Failed to load screen: " + screen);
             }
-
-            onResult?.Invoke();
-
+            
             if (show)
             {
                 _screenStates[screen] = SFScreenState.Showing;
@@ -104,7 +102,7 @@ namespace SFramework.UI.Runtime
             }
         }
 
-        public void UnloadScreen(string screen, Action onResult = null)
+        public void UnloadScreen(string screen)
         {
             if (string.IsNullOrEmpty(screen))
                 throw new ArgumentNullException(nameof(screen));
@@ -114,22 +112,29 @@ namespace SFramework.UI.Runtime
 
             Addressables.Release(_loadedScreens[screen]);
             _loadedScreens.Remove(screen);
-            onResult?.Invoke();
-            ;
         }
 
-        public void ShowScreen(string screen)
+        public async UniTask ShowScreen(string screen, IProgress<float> progress = null, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(screen)) return;
+            if (string.IsNullOrWhiteSpace(screen))
+            {
+                await LoadScreen(screen, false, progress, cancellationToken);
+                return;
+            }
+
             _screenStates[screen] = SFScreenState.Showing;
             OnShowScreen.Invoke(screen);
         }
 
-        public void CloseScreen(string screen)
+        public void CloseScreen(string screen, bool unload = false)
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
             _screenStates[screen] = SFScreenState.Closing;
             OnCloseScreen.Invoke(screen);
+            if (unload)
+            {
+                UnloadScreen(screen);
+            }
         }
 
         public SFScreenState GetScreenState(string screen)

@@ -116,7 +116,9 @@ namespace SFramework.UI.Runtime
 
         public async UniTask ShowScreen(string screen, IProgress<float> progress = null, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(screen))
+            if (string.IsNullOrWhiteSpace(screen)) return;
+
+            if (!_loadedScreens.ContainsKey(screen))
             {
                 await LoadScreen(screen, true, progress, cancellationToken);
                 return;

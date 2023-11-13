@@ -34,8 +34,10 @@ namespace SFramework.UI.Runtime
         private Dictionary<string, SFWidgetNode> _widgetNodes = new();
 
         private bool _isLoaded;
+        readonly Transform _parentTransform;
 
-        SFUIService(ISFConfigsService provider)
+
+        SFUIService(ISFContainer container, ISFConfigsService provider)
         {
             var repositories = provider.GetRepositories<SFUIConfig>();
 
@@ -56,6 +58,9 @@ namespace SFramework.UI.Runtime
                     }
                 }
             }
+
+            _parentTransform = new GameObject("SFUI").GetComponent<Transform>();
+            _parentTransform.SetParent(container.Root, true);
         }
 
         public async UniTask LoadScreen(string screen, bool show = false, IProgress<float> progress = null,
@@ -71,7 +76,7 @@ namespace SFramework.UI.Runtime
                 throw new NullReferenceException("Failed to load screen node: " + screen);
             }
 
-            var handle = Addressables.InstantiateAsync(screenNode.Prefab);
+            var handle = Addressables.InstantiateAsync(screenNode.Prefab, _parentTransform);
 
             _loadedScreens[screen] = handle;
 
@@ -94,7 +99,7 @@ namespace SFramework.UI.Runtime
                 _loadedScreens.Remove(screen);
                 throw new NullReferenceException("Failed to load screen: " + screen);
             }
-            
+
             if (show)
             {
                 _screenStates[screen] = SFScreenState.Showing;

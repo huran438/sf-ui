@@ -43,16 +43,16 @@ namespace SFramework.UI.Runtime
 
             foreach (var repository in repositories)
             {
-                foreach (SFScreenGroupNode groupNode in repository.Nodes)
+                foreach (SFScreenGroupNode groupNode in repository.Children)
                 {
-                    foreach (SFScreenNode screenNode in groupNode.Nodes)
+                    foreach (SFScreenNode screenNode in groupNode.Children)
                     {
-                        var screen = SFConfigsExtensions.GetSFId(repository.Name, groupNode.Name, screenNode.Name);
+                        var screen = SFConfigsExtensions.GetSFId(repository.Id, groupNode.Id, screenNode.Id);
                         _screenNodes.TryAdd(screen, screenNode);
-                        foreach (SFWidgetNode widgetNode in screenNode.Nodes)
+                        foreach (SFWidgetNode widgetNode in screenNode.Children)
                         {
-                            var widget = SFConfigsExtensions.GetSFId(repository.Name, groupNode.Name, screenNode.Name,
-                                widgetNode.Name);
+                            var widget = SFConfigsExtensions.GetSFId(repository.Id, groupNode.Id, screenNode.Id,
+                                widgetNode.Id);
                             _widgetNodes.TryAdd(widget, widgetNode);
                         }
                     }

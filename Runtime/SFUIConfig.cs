@@ -8,7 +8,7 @@ namespace SFramework.UI.Runtime
     {
         public SFScreenGroupNode[] Groups;
 
-        public override ISFConfigNode[] Nodes => Groups;
+        public override ISFConfigNode[] Children => Groups;
 
         public void GetGenerationData(out SFGenerationData[] generationData)
         {
@@ -18,7 +18,7 @@ namespace SFramework.UI.Runtime
             {
                 foreach (var layer1 in layer0.Screens)
                 {
-                    screens.Add($"{Name}/{layer0.Name}/{layer1.Name}");
+                    screens.Add($"{Id}/{layer0.Id}/{layer1.Id}");
                 }
             }
 
@@ -30,7 +30,7 @@ namespace SFramework.UI.Runtime
                 {
                     foreach (var layer2 in layer1.Widgets)
                     {
-                        widgets.Add($"{Name}/{layer0.Name}/{layer1.Name}/{layer2.Name}");
+                        widgets.Add($"{Id}/{layer0.Id}/{layer1.Id}/{layer2.Id}");
                     }
                 }
             }

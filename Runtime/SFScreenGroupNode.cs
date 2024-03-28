@@ -10,6 +10,6 @@ namespace SFramework.UI.Runtime
     {
         public SFScreenNode[] Screens;
 
-        public override ISFConfigNode[] Nodes => Screens;
+        public override ISFConfigNode[] Children => Screens;
     }
 }

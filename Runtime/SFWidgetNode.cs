@@ -8,6 +8,6 @@ namespace SFramework.UI.Runtime
     [Serializable]
     public sealed class SFWidgetNode : SFConfigNode
     {
-        public override ISFConfigNode[] Nodes => null;
+        public override ISFConfigNode[] Children => null;
     }
 }

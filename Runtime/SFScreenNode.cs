@@ -11,6 +11,6 @@ namespace SFramework.UI.Runtime
     {
         public string Prefab;
         public SFWidgetNode[] Widgets;
-        public override ISFConfigNode[] Nodes => Widgets;
+        public override ISFConfigNode[] Children => Widgets;
     }
 }

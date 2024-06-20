@@ -127,13 +127,14 @@ namespace SFramework.UI.Runtime
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
 
+             _screenStates[screen] = SFScreenState.Showing;
+
             if (!_loadedScreens.ContainsKey(screen))
             {
                 await LoadScreen(screen, true, progress, cancellationToken);
                 return;
             }
 
-            _screenStates[screen] = SFScreenState.Showing;
             OnShowScreen.Invoke(screen);
         }
 

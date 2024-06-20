@@ -11,9 +11,6 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 
 namespace SFramework.UI.Runtime
 {
-    public class SFUIServiceAssetNotFoundException : Exception
-    {
-    }
 
     public sealed class SFUIService : ISFUIService
 
@@ -35,11 +32,19 @@ namespace SFramework.UI.Runtime
 
         private bool _isLoaded;
         readonly Transform _parentTransform;
+        private readonly ISFConfigsService _configsService;
 
 
         SFUIService(ISFContainer container, ISFConfigsService provider)
         {
-            var repositories = provider.GetRepositories<SFUIConfig>();
+            _parentTransform = new GameObject("SFUI").GetComponent<Transform>();
+            _parentTransform.SetParent(container.Root, true);
+            _configsService = provider;
+        }
+
+        public UniTask Init(CancellationToken cancellationToken)
+        {
+            var repositories = _configsService.GetConfigs<SFUIConfig>();
 
             foreach (var repository in repositories)
             {
@@ -59,8 +64,7 @@ namespace SFramework.UI.Runtime
                 }
             }
 
-            _parentTransform = new GameObject("SFUI").GetComponent<Transform>();
-            _parentTransform.SetParent(container.Root, true);
+            return UniTask.CompletedTask;
         }
 
         public async UniTask LoadScreen(string screen, bool show = false, IProgress<float> progress = null,
@@ -204,5 +208,7 @@ namespace SFramework.UI.Runtime
         {
             // TODO release managed resources here
         }
+
+
     }
 }

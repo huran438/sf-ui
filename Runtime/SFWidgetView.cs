@@ -12,7 +12,13 @@ namespace SFramework.UI.Runtime
         [SFInject]
         protected readonly ISFUIService _uiService;
 
-        public string Widget => _widget;
+        public string Widget
+        {
+            get
+            {
+                return _widget;
+            }
+        }
 
         [SFWidget]
         [SerializeField]
@@ -20,17 +26,17 @@ namespace SFramework.UI.Runtime
 
         #region Virtual
 
-        protected virtual void PointerEnter(PointerEventData eventData) { }
-        protected virtual void PointerExit(PointerEventData eventData) { }
-        protected virtual void PointerDown(PointerEventData eventData) { }
-        protected virtual void PointerUp(PointerEventData eventData) { }
-        protected virtual void PointerClick(PointerEventData eventData) { }
-        protected virtual void InitializePotentialDrag(PointerEventData eventData) { }
-        protected virtual void BeginDrag(PointerEventData eventData) { }
-        protected virtual void Drag(PointerEventData eventData) { }
-        protected virtual void EndDrag(PointerEventData eventData) { }
-        protected virtual void Drop(PointerEventData eventData) { }
-        protected virtual void Scroll(PointerEventData eventData) { }
+        virtual protected void PointerEnter(PointerEventData eventData) { }
+        virtual protected void PointerExit(PointerEventData eventData) { }
+        virtual protected void PointerDown(PointerEventData eventData) { }
+        virtual protected void PointerUp(PointerEventData eventData) { }
+        virtual protected void PointerClick(PointerEventData eventData) { }
+        virtual protected void InitializePotentialDrag(PointerEventData eventData) { }
+        virtual protected void BeginDrag(PointerEventData eventData) { }
+        virtual protected void Drag(PointerEventData eventData) { }
+        virtual protected void EndDrag(PointerEventData eventData) { }
+        virtual protected void Drop(PointerEventData eventData) { }
+        virtual protected void Scroll(PointerEventData eventData) { }
 
         #endregion
         
@@ -136,5 +142,13 @@ namespace SFramework.UI.Runtime
         }
 
         #endregion
+        
+        public bool IsNull<T>(T instance) where T : IEventSystemHandler
+        {
+            if (instance is Object unityObject)
+                return unityObject == null;
+
+            return instance == null;
+        }
     }
 }

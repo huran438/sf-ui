@@ -1,4 +1,7 @@
-﻿using SFramework.Core.Runtime;
+﻿using System;
+using System.Collections.Generic;
+using JetBrains.Annotations;
+using SFramework.Core.Runtime;
 using UnityEngine;
 
 namespace SFramework.UI.Runtime
@@ -24,8 +27,11 @@ namespace SFramework.UI.Runtime
         
         private Canvas _canvas;
         private CanvasGroup _canvasGroup;
-
         private ISFUIService _uiServiceInternal;
+
+        protected IEnumerable<SFWidgetView> Widgets => _widgets;
+
+        private SFWidgetView[] _widgets = Array.Empty<SFWidgetView>();
 
         protected override void Awake()
         {
@@ -34,6 +40,7 @@ namespace SFramework.UI.Runtime
             _canvasGroup.alpha = _visibleByDefault ? 1f : 0f;
             _canvasGroup.interactable = _visibleByDefault;
             _canvasGroup.blocksRaycasts = _visibleByDefault;
+            _widgets = GetComponentsInChildren<SFWidgetView>(true);
             base.Awake();
         }
 
@@ -49,7 +56,7 @@ namespace SFramework.UI.Runtime
         }
 
 
-        protected abstract void OnShowScreen();
+        protected abstract void OnShowScreen([CanBeNull] string[] parameters);
         protected abstract void OnScreenShown();
         protected abstract void OnCloseScreen();
         protected abstract void OnScreenClosed();
@@ -74,10 +81,10 @@ namespace SFramework.UI.Runtime
             _uiServiceInternal.ScreenClosedCallback(_screen);
         }
 
-        private void _onShowScreen(string screen)
+        private void _onShowScreen(string screen, string[] parameters)
         {
             if (screen != _screen) return;
-            OnShowScreen();
+            OnShowScreen(parameters);
         }
 
         private void _onScreenShown(string screen)

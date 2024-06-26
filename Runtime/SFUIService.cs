@@ -17,7 +17,7 @@ namespace SFramework.UI.Runtime
     {
         public bool IsLoaded => _isLoaded;
 
-        public event Action<string> OnShowScreen = _ => { };
+        public event Action<string, string[]> OnShowScreen = (_, _) => { };
         public event Action<string> OnCloseScreen = _ => { };
         public event Action<string> OnScreenShown = _ => { };
         public event Action<string> OnScreenClosed = _ => { };
@@ -68,7 +68,7 @@ namespace SFramework.UI.Runtime
         }
 
         public async UniTask LoadScreen(string screen, bool show = false, IProgress<float> progress = null,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default, params string[] parameters)
         {
             if (string.IsNullOrEmpty(screen))
                 throw new ArgumentNullException(nameof(screen));
@@ -107,7 +107,7 @@ namespace SFramework.UI.Runtime
             if (show)
             {
                 _screenStates[screen] = SFScreenState.Showing;
-                OnShowScreen.Invoke(screen);
+                OnShowScreen.Invoke(screen, parameters);
             }
         }
 
@@ -122,20 +122,24 @@ namespace SFramework.UI.Runtime
             Addressables.Release(_loadedScreens[screen]);
             _loadedScreens.Remove(screen);
         }
+        public UniTask ShowScreen(string screen, params string[] parameters)
+        {
+            return ShowScreen(screen, null, default, parameters);
+        }
 
-        public async UniTask ShowScreen(string screen, IProgress<float> progress = null, CancellationToken cancellationToken = default)
+        public async UniTask ShowScreen(string screen, IProgress<float> progress = null, CancellationToken cancellationToken = default, params string[] parameters)
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
 
-             _screenStates[screen] = SFScreenState.Showing;
+            _screenStates[screen] = SFScreenState.Showing;
 
             if (!_loadedScreens.ContainsKey(screen))
             {
-                await LoadScreen(screen, true, progress, cancellationToken);
+                await LoadScreen(screen, true, progress, cancellationToken, parameters);
                 return;
             }
 
-            OnShowScreen.Invoke(screen);
+            OnShowScreen.Invoke(screen, parameters);
         }
 
         public void CloseScreen(string screen, bool unload = false)

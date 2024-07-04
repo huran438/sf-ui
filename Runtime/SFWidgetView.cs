@@ -43,67 +43,67 @@ namespace SFramework.UI.Runtime
         #region Handlers
 
         // POINTER EVENTS
-        public void OnPointerEnter(PointerEventData eventData)
+        public virtual void OnPointerEnter(PointerEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFPointerEventType.Enter, eventData);
             PointerEnter(eventData);
         }
 
-        public void OnPointerExit(PointerEventData eventData)
+        public virtual void OnPointerExit(PointerEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFPointerEventType.Exit, eventData);
             PointerExit(eventData);
         }
 
-        public void OnPointerDown(PointerEventData eventData)
+        public virtual void OnPointerDown(PointerEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFPointerEventType.Down, eventData);
             PointerDown(eventData);
         }
 
-        public void OnPointerUp(PointerEventData eventData)
+        public virtual void OnPointerUp(PointerEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFPointerEventType.Up, eventData);
             PointerUp(eventData);
         }
 
-        public void OnPointerClick(PointerEventData eventData)
+        public virtual void OnPointerClick(PointerEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFPointerEventType.Click, eventData);
             PointerClick(eventData);
         }
 
-        public void OnInitializePotentialDrag(PointerEventData eventData)
+        public virtual void OnInitializePotentialDrag(PointerEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFPointerEventType.InitializePotentialDrag, eventData);
             InitializePotentialDrag(eventData);
         }
 
-        public void OnBeginDrag(PointerEventData eventData)
+        public virtual void OnBeginDrag(PointerEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFPointerEventType.BeginDrag, eventData);
             BeginDrag(eventData);
         }
 
-        public void OnDrag(PointerEventData eventData)
+        public virtual void OnDrag(PointerEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFPointerEventType.Drag, eventData);
             Drag(eventData);
         }
 
-        public void OnEndDrag(PointerEventData eventData)
+        public virtual void OnEndDrag(PointerEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFPointerEventType.EndDrag, eventData);
             EndDrag(eventData);
         }
 
-        public void OnDrop(PointerEventData eventData)
+        public virtual void OnDrop(PointerEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFPointerEventType.Drop, eventData);
             Drop(eventData);
         }
 
-        public void OnScroll(PointerEventData eventData)
+        public virtual void OnScroll(PointerEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFPointerEventType.Scroll, eventData);
             Scroll(eventData);
@@ -111,32 +111,32 @@ namespace SFramework.UI.Runtime
 
         // BASE EVENTS
 
-        public void OnUpdateSelected(BaseEventData eventData)
+        public virtual void OnUpdateSelected(BaseEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFBaseEventType.UpdateSelected, eventData);
         }
 
-        public void OnSelect(BaseEventData eventData)
+        public virtual void OnSelect(BaseEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFBaseEventType.Select, eventData);
         }
 
-        public void OnDeselect(BaseEventData eventData)
+        public virtual void OnDeselect(BaseEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFBaseEventType.Deselect, eventData);
         }
 
-        public void OnMove(AxisEventData eventData)
+        public virtual void OnMove(AxisEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFBaseEventType.Move, eventData);
         }
 
-        public void OnSubmit(BaseEventData eventData)
+        public virtual void OnSubmit(BaseEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFBaseEventType.Submit, eventData);
         }
 
-        public void OnCancel(BaseEventData eventData)
+        public virtual void OnCancel(BaseEventData eventData)
         {
             _uiService.WidgetEventCallback(_widget, SFBaseEventType.Cancel, eventData);
         }

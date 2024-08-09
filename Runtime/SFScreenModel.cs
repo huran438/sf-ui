@@ -10,6 +10,7 @@ namespace SFramework.UI.Runtime
 
         public SFScreenModel(SFScreenNode node) : base(node)
         {
+            State = SFScreenState.Closed;
         }
 
         public override void Dispose()

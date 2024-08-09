@@ -48,7 +48,7 @@ namespace SFramework.UI.Runtime
         public void _InitializeScreenInternal(ISFUIService uiController)
         {
             _uiServiceInternal = uiController;
-            _uiServiceInternal.Register(_screen, gameObject);
+            _uiServiceInternal.RegisterScreen(_screen, gameObject);
             _uiServiceInternal.OnShowScreen += _onShowScreen;
             _uiServiceInternal.OnCloseScreen += _onCloseScreen;
             _uiServiceInternal.OnScreenShown += _onScreenShown;
@@ -108,7 +108,7 @@ namespace SFramework.UI.Runtime
         protected virtual void OnDestroy()
         {
             if (!Application.isPlaying) return;
-            _uiServiceInternal.Unregister(_screen);
+            _uiServiceInternal.UnregisterScreen(_screen);
             _uiServiceInternal.OnShowScreen -= _onShowScreen;
             _uiServiceInternal.OnCloseScreen -= _onCloseScreen;
             _uiServiceInternal.OnScreenShown -= _onScreenShown;

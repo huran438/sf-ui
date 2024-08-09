@@ -11,7 +11,6 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 
 namespace SFramework.UI.Runtime
 {
-
     public sealed class SFUIService : ISFUIService
 
     {
@@ -29,6 +28,7 @@ namespace SFramework.UI.Runtime
         private Dictionary<string, GameObject> _screenRootGameObjects = new();
         private Dictionary<string, SFScreenNode> _screenNodes = new();
         private Dictionary<string, SFWidgetNode> _widgetNodes = new();
+        private Dictionary<string, List<SFWidgetView>> _widgetViews = new();
 
         private bool _isLoaded;
         readonly Transform _parentTransform;
@@ -44,25 +44,27 @@ namespace SFramework.UI.Runtime
 
         public UniTask Init(CancellationToken cancellationToken)
         {
-            var repositories = _configsService.GetConfigs<SFUIConfig>();
-
-            foreach (var repository in repositories)
+            if (_configsService.TryGetConfigs(out SFUIConfig[] configs))
             {
-                foreach (SFScreenGroupNode groupNode in repository.Children)
+                foreach (var repository in configs)
                 {
-                    foreach (SFScreenNode screenNode in groupNode.Children)
+                    foreach (var groupNode in repository.Children)
                     {
-                        var screen = SFConfigsExtensions.GetSFId(repository.Id, groupNode.Id, screenNode.Id);
-                        _screenNodes.TryAdd(screen, screenNode);
-                        foreach (SFWidgetNode widgetNode in screenNode.Children)
+                        foreach (var screenNode in groupNode.Children)
                         {
-                            var widget = SFConfigsExtensions.GetSFId(repository.Id, groupNode.Id, screenNode.Id,
-                                widgetNode.Id);
-                            _widgetNodes.TryAdd(widget, widgetNode);
+                            var screen = SFConfigsExtensions.GetSFId(repository.Id, groupNode.Id, screenNode.Id);
+                            _screenNodes.TryAdd(screen, screenNode as SFScreenNode);
+                            foreach (var widgetNode in screenNode.Children)
+                            {
+                                var widget = SFConfigsExtensions.GetSFId(repository.Id, groupNode.Id, screenNode.Id,
+                                    widgetNode.Id);
+                                _widgetNodes.TryAdd(widget, widgetNode as SFWidgetNode);
+                            }
                         }
                     }
                 }
             }
+
 
             return UniTask.CompletedTask;
         }
@@ -122,12 +124,14 @@ namespace SFramework.UI.Runtime
             Addressables.Release(_loadedScreens[screen]);
             _loadedScreens.Remove(screen);
         }
+
         public UniTask ShowScreen(string screen, params string[] parameters)
         {
             return ShowScreen(screen, null, default, parameters);
         }
 
-        public async UniTask ShowScreen(string screen, IProgress<float> progress = null, CancellationToken cancellationToken = default, params string[] parameters)
+        public async UniTask ShowScreen(string screen, IProgress<float> progress = null, CancellationToken cancellationToken = default,
+            params string[] parameters)
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
 
@@ -163,7 +167,7 @@ namespace SFramework.UI.Runtime
             return !_screenRootGameObjects.ContainsKey(screen) ? null : _screenRootGameObjects[screen];
         }
 
-        public void Register(string screen, GameObject root)
+        public void RegisterScreen(string screen, GameObject root)
         {
             if (!_isLoaded)
             {
@@ -174,7 +178,41 @@ namespace SFramework.UI.Runtime
             _screenRootGameObjects[screen] = root;
         }
 
-        public void Unregister(string screen)
+        public void RegisterWidget(string widget, SFWidgetView widgetView)
+        {
+            if (_widgetViews.TryGetValue(widget, out var widgetViews))
+            {
+                widgetViews.Add(widgetView);
+            }
+            else
+            {
+                var initialWidgetViews = new List<SFWidgetView>() { widgetView };
+                if (!_widgetViews.TryAdd(widget, initialWidgetViews))
+                {
+                    SFDebug.Log(LogType.Error, "Can't add WidgetView to widget {0}", widget);
+                }
+            }
+        }
+
+        public void UnregisterWidget(string widget)
+        {
+            if (_widgetViews.ContainsKey(widget))
+            {
+                _widgetViews.Remove(widget);
+            }
+        }
+
+        public bool TryGetWidget(string widget, int index, out SFWidgetView view)
+        {
+            view = null;
+            if (string.IsNullOrEmpty(widget)) return false;
+            if (!_widgetViews.TryGetValue(widget, out var widgets)) return false;
+            index = Mathf.Clamp(index, 0, widgets.Count);
+            view = widgets[index];
+            return true;
+        }
+
+        public void UnregisterScreen(string screen)
         {
             if (_screenStates.ContainsKey(screen))
                 _screenStates.Remove(screen);
@@ -213,7 +251,5 @@ namespace SFramework.UI.Runtime
         {
             // TODO release managed resources here
         }
-
-
     }
 }

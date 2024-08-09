@@ -3,20 +3,24 @@ using System.Collections.Generic;
 using JetBrains.Annotations;
 using SFramework.Core.Runtime;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace SFramework.UI.Runtime
 {
     [RequireComponent(typeof(Canvas))]
     [RequireComponent(typeof(CanvasGroup))]
+    [RequireComponent(typeof(GraphicRaycaster))]
     public abstract class SFScreenView : SFView
     {
         public Canvas Canvas => _canvas;
 
         public CanvasGroup CanvasGroup => _canvasGroup;
 
+        public GraphicRaycaster GraphicRaycaster => _graphicRaycaster;
+
         public string Screen => _screen;
 
-        protected SFScreenState State => _uiServiceInternal.GetScreenState(_screen);
+        protected SFScreenState State => _uiServiceInternal.TryGetScreenModel(_screen, out var model) ? model.State : SFScreenState.Closed;
 
         [SFScreen]
         [SerializeField]
@@ -27,6 +31,7 @@ namespace SFramework.UI.Runtime
         
         private Canvas _canvas;
         private CanvasGroup _canvasGroup;
+        private GraphicRaycaster _graphicRaycaster;
         private ISFUIService _uiServiceInternal;
 
         protected IEnumerable<SFWidgetView> Widgets => _widgets;
@@ -37,6 +42,7 @@ namespace SFramework.UI.Runtime
         {
             _canvas = GetComponent<Canvas>();
             _canvasGroup = GetComponent<CanvasGroup>();
+            _graphicRaycaster = GetComponent<GraphicRaycaster>();
             _canvasGroup.alpha = _visibleByDefault ? 1f : 0f;
             _canvasGroup.interactable = _visibleByDefault;
             _canvasGroup.blocksRaycasts = _visibleByDefault;
@@ -48,7 +54,7 @@ namespace SFramework.UI.Runtime
         public void _InitializeScreenInternal(ISFUIService uiController)
         {
             _uiServiceInternal = uiController;
-            _uiServiceInternal.RegisterScreen(_screen, gameObject);
+            _uiServiceInternal.RegisterScreen(_screen, this);
             _uiServiceInternal.OnShowScreen += _onShowScreen;
             _uiServiceInternal.OnCloseScreen += _onCloseScreen;
             _uiServiceInternal.OnScreenShown += _onScreenShown;

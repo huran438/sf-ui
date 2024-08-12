@@ -188,7 +188,7 @@ namespace SFramework.UI.Runtime
 
         protected virtual void OnDestroy()
         {
-            UIService.UnregisterWidget(_widget);
+            UIService.UnregisterWidget(_widget, this);
         }
 
         public bool IsNull<T>(T instance) where T : IEventSystemHandler

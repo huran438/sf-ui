@@ -14,23 +14,24 @@ namespace SFramework.UI.Runtime
 {
     public sealed class SFUIService : ISFUIService
     {
-
         public event Action<string, string[]> OnShowScreen = (_, _) => { };
         public event Action<string> OnCloseScreen = _ => { };
         public event Action<string> OnScreenShown = _ => { };
         public event Action<string> OnScreenClosed = _ => { };
         public event Action<string, SFBaseEventType, BaseEventData> OnWidgetBaseEvent = (_, _, _) => { };
         public event Action<string, SFPointerEventType, PointerEventData> OnWidgetPointerEvent = (_, _, _) => { };
-        
+
         public SFScreenModel[] ScreenModels => _screenModels.Values.ToArray();
+        public SFWidgetModel[] WidgetModels => _widgetModelById.Values.ToArray();
 
         private readonly Dictionary<string, SFScreenModel> _screenModels = new();
+        private readonly Dictionary<string, SFWidgetModel> _widgetModelById = new();
         private readonly Dictionary<string, AsyncOperationHandle> _operationHandleByScreen = new();
         private readonly Dictionary<string, SFScreenView> _screenViews = new();
         private readonly Dictionary<string, SFScreenNode> _screenNodes = new();
         private readonly Dictionary<string, SFWidgetNode> _widgetNodes = new();
         private readonly Dictionary<string, List<SFWidgetView>> _widgetViews = new();
-        
+
         readonly Transform _parentTransform;
         private readonly ISFConfigsService _configsService;
 
@@ -48,16 +49,18 @@ namespace SFramework.UI.Runtime
             {
                 foreach (var repository in configs)
                 {
-                    foreach (var groupNode in repository.Children)
+                    foreach (var groupNode in repository.Groups)
                     {
-                        foreach (var screenNode in groupNode.Children)
+                        foreach (var screenNode in groupNode.Screens)
                         {
-                            _screenNodes.TryAdd(screenNode.FullId, screenNode as SFScreenNode);
-                            _screenModels.Add(screenNode.FullId, new SFScreenModel(screenNode as SFScreenNode));
-                            foreach (var widgetNode in screenNode.Children)
+                            _screenNodes.TryAdd(screenNode.FullId, screenNode);
+                            _screenModels.TryAdd(screenNode.FullId, new SFScreenModel(screenNode));
+                            SFDebug.Log("Screen: {0}", screenNode.FullId);
+                            foreach (var widgetNode in screenNode.Widgets)
                             {
-                                var widget = widgetNode.FullId;
-                                _widgetNodes.TryAdd(widget, widgetNode as SFWidgetNode);
+                                _widgetNodes.TryAdd(widgetNode.FullId, widgetNode);
+                                _widgetModelById.TryAdd(widgetNode.FullId, new SFWidgetModel(widgetNode));
+                                SFDebug.Log("Widget: {0}", widgetNode.FullId);
                             }
                         }
                     }
@@ -67,7 +70,6 @@ namespace SFramework.UI.Runtime
 
             return UniTask.CompletedTask;
         }
-
 
 
         public async UniTask LoadScreen(string screen, bool show = false, IProgress<float> progress = null,
@@ -172,6 +174,10 @@ namespace SFramework.UI.Runtime
         {
             _screenModels[screen].State = SFScreenState.Closed;
             _screenViews[screen] = root;
+            if (TryGetScreenModel(screen, out var model))
+            {
+                model.IsLoaded = true;
+            }
         }
 
         public void RegisterWidget(string widget, SFWidgetView widgetView)
@@ -188,13 +194,23 @@ namespace SFramework.UI.Runtime
                     SFDebug.Log(LogType.Error, "Can't add WidgetView to widget {0}", widget);
                 }
             }
+
+            if (TryGetWidgetModel(widget, out var model))
+            {
+                model.RegisterView(widgetView);
+            }
         }
 
-        public void UnregisterWidget(string widget)
+        public void UnregisterWidget(string widget, SFWidgetView widgetView)
         {
             if (_widgetViews.ContainsKey(widget))
             {
                 _widgetViews.Remove(widget);
+            }
+
+            if (TryGetWidgetModel(widget, out var model))
+            {
+                model.UnregisterView(widgetView);
             }
         }
 
@@ -213,12 +229,24 @@ namespace SFramework.UI.Runtime
             return _widgetNodes.TryGetValue(widget, out widgetNode);
         }
 
+        public bool TryGetWidgetModel(string widget, out SFWidgetModel widgetModel)
+        {
+            return _widgetModelById.TryGetValue(widget, out widgetModel);
+        }
+
         public void UnregisterScreen(string screen)
         {
             _screenModels[screen].State = SFScreenState.Closed;
 
             if (_screenViews.ContainsKey(screen))
+            {
                 _screenViews.Remove(screen);
+            }
+
+            if (TryGetScreenModel(screen, out var model))
+            {
+                model.IsLoaded = false;
+            }
         }
 
         public void ScreenShownCallback(string screen)

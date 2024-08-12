@@ -16,6 +16,7 @@ namespace SFramework.UI.Runtime
         event Action<string, SFBaseEventType, BaseEventData> OnWidgetBaseEvent;
         event Action<string, SFPointerEventType, PointerEventData> OnWidgetPointerEvent;
         SFScreenModel[] ScreenModels { get; }
+        SFWidgetModel[] WidgetModels { get; }
 
         UniTask LoadScreen(string screen, bool show = false, IProgress<float> progress = null,
             CancellationToken cancellationToken = default, params string[] parameters);
@@ -31,10 +32,10 @@ namespace SFramework.UI.Runtime
         bool TryGetScreenModel(string screen, out SFScreenModel screenModel);
         void RegisterScreen(string screen, SFScreenView root);
         void RegisterWidget(string widget, SFWidgetView widgetView);
-        void UnregisterWidget(string widget);
-
+        void UnregisterWidget(string widget, SFWidgetView widgetView);
         bool TryGetWidgetView(string widget, int index, out SFWidgetView view);
         bool TryGetWidgetNode(string widget, out SFWidgetNode widgetNode);
+        bool TryGetWidgetModel(string widget, out SFWidgetModel widgetModel);
         void UnregisterScreen(string screen);
         void ScreenShownCallback(string screen);
         void ScreenClosedCallback(string screen);

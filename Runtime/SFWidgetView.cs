@@ -77,68 +77,123 @@ namespace SFramework.UI.Runtime
         // POINTER EVENTS
         public virtual void OnPointerEnter(PointerEventData eventData)
         {
-            UIService.WidgetEventCallback(_widget, SFPointerEventType.Enter, eventData);
-            PointerEnter(eventData);
+            if (string.IsNullOrEmpty(_widget))
+            {
+                OnWidgetPointerEvent(_widget, Index, SFPointerEventType.Enter, eventData);
+                return;
+            }
+
+            UIService.WidgetEventCallback(_widget, Index, SFPointerEventType.Enter, eventData);
         }
 
         public virtual void OnPointerExit(PointerEventData eventData)
         {
-            UIService.WidgetEventCallback(_widget, SFPointerEventType.Exit, eventData);
-            PointerExit(eventData);
+            if (string.IsNullOrEmpty(_widget))
+            {
+                OnWidgetPointerEvent(_widget, Index, SFPointerEventType.Exit, eventData);
+                return;
+            }
+
+            UIService.WidgetEventCallback(_widget, Index, SFPointerEventType.Exit, eventData);
         }
 
         public virtual void OnPointerDown(PointerEventData eventData)
         {
-            UIService.WidgetEventCallback(_widget, SFPointerEventType.Down, eventData);
-            PointerDown(eventData);
+            if (string.IsNullOrEmpty(_widget))
+            {
+                OnWidgetPointerEvent(_widget, Index, SFPointerEventType.Down, eventData);
+                return;
+            }
+
+            UIService.WidgetEventCallback(_widget, Index, SFPointerEventType.Down, eventData);
         }
 
         public virtual void OnPointerUp(PointerEventData eventData)
         {
-            UIService.WidgetEventCallback(_widget, SFPointerEventType.Up, eventData);
-            PointerUp(eventData);
+            if (string.IsNullOrEmpty(_widget))
+            {
+                OnWidgetPointerEvent(_widget, Index, SFPointerEventType.Up, eventData);
+                return;
+            }
+
+            UIService.WidgetEventCallback(_widget, Index, SFPointerEventType.Up, eventData);
         }
 
         public virtual void OnPointerClick(PointerEventData eventData)
         {
-            UIService.WidgetEventCallback(_widget, SFPointerEventType.Click, eventData);
-            PointerClick(eventData);
+            if (string.IsNullOrEmpty(_widget))
+            {
+                OnWidgetPointerEvent(_widget, Index, SFPointerEventType.Click, eventData);
+                return;
+            }
+
+            UIService.WidgetEventCallback(_widget, Index, SFPointerEventType.Click, eventData);
         }
 
         public virtual void OnInitializePotentialDrag(PointerEventData eventData)
         {
-            UIService.WidgetEventCallback(_widget, SFPointerEventType.InitializePotentialDrag, eventData);
-            InitializePotentialDrag(eventData);
+            if (string.IsNullOrEmpty(_widget))
+            {
+                OnWidgetPointerEvent(_widget, Index, SFPointerEventType.InitializePotentialDrag, eventData);
+                return;
+            }
+
+            UIService.WidgetEventCallback(_widget, Index, SFPointerEventType.InitializePotentialDrag, eventData);
         }
 
         public virtual void OnBeginDrag(PointerEventData eventData)
         {
-            UIService.WidgetEventCallback(_widget, SFPointerEventType.BeginDrag, eventData);
-            BeginDrag(eventData);
+            if (string.IsNullOrEmpty(_widget))
+            {
+                OnWidgetPointerEvent(_widget, Index, SFPointerEventType.BeginDrag, eventData);
+                return;
+            }
+
+            UIService.WidgetEventCallback(_widget, Index, SFPointerEventType.BeginDrag, eventData);
         }
 
         public virtual void OnDrag(PointerEventData eventData)
         {
-            UIService.WidgetEventCallback(_widget, SFPointerEventType.Drag, eventData);
-            Drag(eventData);
+            if (string.IsNullOrEmpty(_widget))
+            {
+                OnWidgetPointerEvent(_widget, Index, SFPointerEventType.Drag, eventData);
+                return;
+            }
+
+            UIService.WidgetEventCallback(_widget, Index, SFPointerEventType.Drag, eventData);
         }
 
         public virtual void OnEndDrag(PointerEventData eventData)
         {
-            UIService.WidgetEventCallback(_widget, SFPointerEventType.EndDrag, eventData);
-            EndDrag(eventData);
+            if (string.IsNullOrEmpty(_widget))
+            {
+                OnWidgetPointerEvent(_widget, Index, SFPointerEventType.EndDrag, eventData);
+                return;
+            }
+
+            UIService.WidgetEventCallback(_widget, Index, SFPointerEventType.EndDrag, eventData);
         }
 
         public virtual void OnDrop(PointerEventData eventData)
         {
-            UIService.WidgetEventCallback(_widget, SFPointerEventType.Drop, eventData);
-            Drop(eventData);
+            if (string.IsNullOrEmpty(_widget))
+            {
+                OnWidgetPointerEvent(_widget, Index, SFPointerEventType.Drop, eventData);
+                return;
+            }
+
+            UIService.WidgetEventCallback(_widget, Index, SFPointerEventType.Drop, eventData);
         }
 
         public virtual void OnScroll(PointerEventData eventData)
         {
-            UIService.WidgetEventCallback(_widget, SFPointerEventType.Scroll, eventData);
-            Scroll(eventData);
+            if (string.IsNullOrEmpty(_widget))
+            {
+                OnWidgetPointerEvent(_widget, Index, SFPointerEventType.Scroll, eventData);
+                return;
+            }
+
+            UIService.WidgetEventCallback(_widget, Index, SFPointerEventType.Scroll, eventData);
         }
 
         // BASE EVENTS
@@ -180,14 +235,59 @@ namespace SFramework.UI.Runtime
             RectTransform = transform as RectTransform;
             base.Awake();
         }
-        
+
         protected virtual void Start()
         {
             UIService.RegisterWidget(_widget, this);
+            UIService.OnWidgetPointerEvent += OnWidgetPointerEvent;
+        }
+
+        private void OnWidgetPointerEvent(string widget, int index, SFPointerEventType sfPointerEventType, PointerEventData eventData)
+        {
+            if (widget != _widget) return;
+            if (index != Index) return;
+
+            switch (sfPointerEventType)
+            {
+                case SFPointerEventType.Enter:
+                    PointerEnter(eventData);
+                    break;
+                case SFPointerEventType.Exit:
+                    PointerExit(eventData);
+                    break;
+                case SFPointerEventType.Down:
+                    PointerDown(eventData);
+                    break;
+                case SFPointerEventType.Up:
+                    PointerUp(eventData);
+                    break;
+                case SFPointerEventType.Click:
+                    PointerClick(eventData);
+                    break;
+                case SFPointerEventType.InitializePotentialDrag:
+                    InitializePotentialDrag(eventData);
+                    break;
+                case SFPointerEventType.BeginDrag:
+                    BeginDrag(eventData);
+                    break;
+                case SFPointerEventType.Drag:
+                    Drag(eventData);
+                    break;
+                case SFPointerEventType.EndDrag:
+                    EndDrag(eventData);
+                    break;
+                case SFPointerEventType.Drop:
+                    Drop(eventData);
+                    break;
+                case SFPointerEventType.Scroll:
+                    Scroll(eventData);
+                    break;
+            }
         }
 
         protected virtual void OnDestroy()
         {
+            UIService.OnWidgetPointerEvent -= OnWidgetPointerEvent;
             UIService.UnregisterWidget(_widget, this);
         }
 

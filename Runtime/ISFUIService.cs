@@ -14,7 +14,7 @@ namespace SFramework.UI.Runtime
         event Action<string> OnScreenShown;
         event Action<string> OnScreenClosed;
         event Action<string, SFBaseEventType, BaseEventData> OnWidgetBaseEvent;
-        event Action<string, SFPointerEventType, PointerEventData> OnWidgetPointerEvent;
+        event Action<string, int,SFPointerEventType, PointerEventData> OnWidgetPointerEvent;
         SFScreenModel[] ScreenModels { get; }
         SFWidgetModel[] WidgetModels { get; }
 
@@ -40,6 +40,6 @@ namespace SFramework.UI.Runtime
         void ScreenShownCallback(string screen);
         void ScreenClosedCallback(string screen);
         void WidgetEventCallback(string widget, SFBaseEventType eventType, BaseEventData eventData);
-        void WidgetEventCallback(string widget, SFPointerEventType eventType, PointerEventData eventData);
+        void WidgetEventCallback(string widget, int index, SFPointerEventType eventType, PointerEventData eventData);
     }
 }

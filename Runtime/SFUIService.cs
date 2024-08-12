@@ -19,7 +19,7 @@ namespace SFramework.UI.Runtime
         public event Action<string> OnScreenShown = _ => { };
         public event Action<string> OnScreenClosed = _ => { };
         public event Action<string, SFBaseEventType, BaseEventData> OnWidgetBaseEvent = (_, _, _) => { };
-        public event Action<string, SFPointerEventType, PointerEventData> OnWidgetPointerEvent = (_, _, _) => { };
+        public event Action<string, int, SFPointerEventType, PointerEventData> OnWidgetPointerEvent = (_, _, _, _) => { };
 
         public SFScreenModel[] ScreenModels => _screenModels.Values.ToArray();
         public SFWidgetModel[] WidgetModels => _widgetModelById.Values.ToArray();
@@ -55,12 +55,10 @@ namespace SFramework.UI.Runtime
                         {
                             _screenNodes.TryAdd(screenNode.FullId, screenNode);
                             _screenModels.TryAdd(screenNode.FullId, new SFScreenModel(screenNode));
-                            SFDebug.Log("Screen: {0}", screenNode.FullId);
                             foreach (var widgetNode in screenNode.Widgets)
                             {
                                 _widgetNodes.TryAdd(widgetNode.FullId, widgetNode);
                                 _widgetModelById.TryAdd(widgetNode.FullId, new SFWidgetModel(widgetNode));
-                                SFDebug.Log("Widget: {0}", widgetNode.FullId);
                             }
                         }
                     }
@@ -269,10 +267,10 @@ namespace SFramework.UI.Runtime
             OnWidgetBaseEvent.Invoke(widget, eventType, eventData);
         }
 
-        public void WidgetEventCallback(string widget, SFPointerEventType eventType, PointerEventData eventData)
+        public void WidgetEventCallback(string widget, int index, SFPointerEventType eventType, PointerEventData eventData)
         {
             if (string.IsNullOrWhiteSpace(widget)) return;
-            OnWidgetPointerEvent.Invoke(widget, eventType, eventData);
+            OnWidgetPointerEvent.Invoke(widget, index, eventType, eventData);
         }
 
         public void Dispose()

@@ -150,6 +150,8 @@ namespace SFramework.UI.Runtime
         public void CloseScreen(string screen, bool unload = false)
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
+            if (!_screenViews.ContainsKey(screen)) return;
+            
             _screenModels[screen].State = SFScreenState.Closing;
             OnCloseScreen.Invoke(screen);
             if (unload)

@@ -240,6 +240,20 @@ namespace SFramework.UI.Runtime
         {
             UIService.RegisterWidget(_widget, this);
             UIService.OnWidgetPointerEvent += OnWidgetPointerEvent;
+            UIService.OnShowScreen += OnShowScreen;
+            UIService.OnCloseScreen += OnCloseScreen;
+        }
+
+        private void OnShowScreen(string screen, object[] parameters)
+        {
+            if (!_widget.StartsWith(screen)) return;
+            ShowScreenEvent(parameters);
+        }
+
+        private void OnCloseScreen(string screen)
+        {
+            if (!_widget.StartsWith(screen)) return;
+            CloseScreenEvent();
         }
 
         private void OnWidgetPointerEvent(string widget, int index, SFPointerEventType sfPointerEventType, PointerEventData eventData)
@@ -285,8 +299,18 @@ namespace SFramework.UI.Runtime
             }
         }
 
+        protected virtual void ShowScreenEvent(object[] parameters)
+        {
+        }
+
+        protected virtual void CloseScreenEvent()
+        {
+        }
+
         protected virtual void OnDestroy()
         {
+            UIService.OnShowScreen -= OnShowScreen;
+            UIService.OnCloseScreen -= OnCloseScreen;
             UIService.OnWidgetPointerEvent -= OnWidgetPointerEvent;
             UIService.UnregisterWidget(_widget, this);
         }

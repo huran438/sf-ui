@@ -62,7 +62,7 @@ namespace SFramework.UI.Runtime
         }
 
 
-        protected abstract void OnShowScreen([CanBeNull] string[] parameters);
+        protected abstract void OnShowScreen([CanBeNull] object[] parameters);
         protected abstract void OnScreenShown();
         protected abstract void OnCloseScreen();
         protected abstract void OnScreenClosed();
@@ -87,7 +87,7 @@ namespace SFramework.UI.Runtime
             _uiServiceInternal.ScreenClosedCallback(_screen);
         }
 
-        private void _onShowScreen(string screen, string[] parameters)
+        private void _onShowScreen(string screen, object[] parameters)
         {
             if (screen != _screen) return;
             OnShowScreen(parameters);

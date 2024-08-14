@@ -14,7 +14,7 @@ namespace SFramework.UI.Runtime
 {
     public sealed class SFUIService : ISFUIService
     {
-        public event Action<string, string[]> OnShowScreen = (_, _) => { };
+        public event Action<string, object[]> OnShowScreen = (_, _) => { };
         public event Action<string> OnCloseScreen = _ => { };
         public event Action<string> OnScreenShown = _ => { };
         public event Action<string> OnScreenClosed = _ => { };
@@ -71,7 +71,7 @@ namespace SFramework.UI.Runtime
 
 
         public async UniTask LoadScreen(string screen, bool show = false, IProgress<float> progress = null,
-            CancellationToken cancellationToken = default, params string[] parameters)
+            CancellationToken cancellationToken = default, params object[] parameters)
         {
             if (string.IsNullOrEmpty(screen))
                 throw new ArgumentNullException(nameof(screen));
@@ -126,13 +126,13 @@ namespace SFramework.UI.Runtime
             _operationHandleByScreen.Remove(screen);
         }
 
-        public UniTask ShowScreen(string screen, params string[] parameters)
+        public UniTask ShowScreen(string screen, params object[] parameters)
         {
             return ShowScreen(screen, null, default, parameters);
         }
 
         public async UniTask ShowScreen(string screen, IProgress<float> progress = null, CancellationToken cancellationToken = default,
-            params string[] parameters)
+            params object[] parameters)
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
 

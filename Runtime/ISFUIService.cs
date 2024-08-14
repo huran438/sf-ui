@@ -9,7 +9,7 @@ namespace SFramework.UI.Runtime
 {
     public interface ISFUIService : ISFService
     {
-        event Action<string, string[]> OnShowScreen;
+        event Action<string, object[]> OnShowScreen;
         event Action<string> OnCloseScreen;
         event Action<string> OnScreenShown;
         event Action<string> OnScreenClosed;
@@ -19,13 +19,13 @@ namespace SFramework.UI.Runtime
         SFWidgetModel[] WidgetModels { get; }
 
         UniTask LoadScreen(string screen, bool show = false, IProgress<float> progress = null,
-            CancellationToken cancellationToken = default, params string[] parameters);
+            CancellationToken cancellationToken = default, params object[] parameters);
 
         void UnloadScreen(string screen);
-        UniTask ShowScreen(string screen, params string[] parameters);
+        UniTask ShowScreen(string screen, params object[] parameters);
 
         UniTask ShowScreen(string screen, IProgress<float> progress = null, CancellationToken cancellationToken = default,
-            params string[] parameters);
+            params object[] parameters);
 
         void CloseScreen(string screen, bool unload = false);
         bool TryGetScreenView(string screen, out SFScreenView screenView);

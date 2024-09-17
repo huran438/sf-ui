@@ -14,6 +14,8 @@ namespace SFramework.UI.Runtime
 {
     public sealed class SFUIService : ISFUIService
     {
+        public event Action<string> OnUnloadScreen = _ => { };
+        public event Action<string> OnScreenUnloaded = _ => { };
         public event Action<string, object[]> OnShowScreen = (_, _) => { };
         public event Action<string> OnCloseScreen = _ => { };
         public event Action<string> OnScreenShown = _ => { };
@@ -121,9 +123,11 @@ namespace SFramework.UI.Runtime
 
             if (!_operationHandleByScreen.ContainsKey(screen))
                 throw new Exception("Screen not loaded: " + screen);
-
+            
+            OnUnloadScreen.Invoke(screen);
             Addressables.Release(_operationHandleByScreen[screen]);
             _operationHandleByScreen.Remove(screen);
+            OnScreenUnloaded.Invoke(screen);
         }
 
         public UniTask ShowScreen(string screen, params object[] parameters)
@@ -151,13 +155,17 @@ namespace SFramework.UI.Runtime
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
             if (!_screenViews.ContainsKey(screen)) return;
-            
+
             _screenModels[screen].State = SFScreenState.Closing;
             OnCloseScreen.Invoke(screen);
-            if (unload)
+            if (!unload) return;
+            if (_screenModels[screen].State != SFScreenState.Closed)
             {
-                UnloadScreen(screen);
+                _screenModels[screen].State = SFScreenState.Closed;
+                OnScreenClosed.Invoke(screen);
             }
+
+            UnloadScreen(screen);
         }
 
         public bool TryGetScreenView(string screen, out SFScreenView screenView)

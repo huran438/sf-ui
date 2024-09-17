@@ -25,10 +25,10 @@ namespace SFramework.UI.Runtime
         [SFScreen]
         [SerializeField]
         private string _screen;
-        
+
         [SerializeField]
         private bool _visibleByDefault;
-        
+
         private Canvas _canvas;
         private CanvasGroup _canvasGroup;
         private GraphicRaycaster _graphicRaycaster;
@@ -66,6 +66,7 @@ namespace SFramework.UI.Runtime
         protected abstract void OnScreenShown();
         protected abstract void OnCloseScreen();
         protected abstract void OnScreenClosed();
+        protected abstract void OnScreenDestroy();
 
         public void ShowScreen()
         {
@@ -114,6 +115,7 @@ namespace SFramework.UI.Runtime
         protected virtual void OnDestroy()
         {
             if (!Application.isPlaying) return;
+            OnScreenDestroy();
             _uiServiceInternal.UnregisterScreen(_screen);
             _uiServiceInternal.OnShowScreen -= _onShowScreen;
             _uiServiceInternal.OnCloseScreen -= _onCloseScreen;

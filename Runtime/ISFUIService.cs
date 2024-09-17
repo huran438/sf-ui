@@ -9,6 +9,8 @@ namespace SFramework.UI.Runtime
 {
     public interface ISFUIService : ISFService
     {
+        event Action<string> OnUnloadScreen;
+        event Action<string> OnScreenUnloaded;
         event Action<string, object[]> OnShowScreen;
         event Action<string> OnCloseScreen;
         event Action<string> OnScreenShown;

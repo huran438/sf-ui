@@ -20,7 +20,9 @@ namespace SFramework.UI.Runtime
 
         public string Screen => _screen;
 
-        protected SFScreenState State => _uiServiceInternal.TryGetScreenModel(_screen, out var model) ? model.State : SFScreenState.Closed;
+        protected SFScreenState State => _uiServiceInternal.TryGetScreenModel(_screen, out var model)
+            ? model.State
+            : SFScreenState.Closed;
 
         [SFScreen]
         [SerializeField]

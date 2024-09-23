@@ -9,7 +9,7 @@ namespace SFramework.UI.Runtime
     {
         public IReadOnlyList<SFWidgetView> Views => _views;
 
-        private List<SFWidgetView> _views = new();
+        private List<SFWidgetView> _views;
 
         public SFWidgetModel(SFWidgetNode node) : base(node)
         {
@@ -28,11 +28,13 @@ namespace SFramework.UI.Runtime
 
         public bool IsLoadedViewByIndex(int index)
         {
-            return _views.Count > 0 && index >= 0 && index < _views.Count;
+            if (index < 0) index = 0;
+            return _views.Count > 0 && index < _views.Count;
         }
 
         public override void Dispose()
         {
+            _views.Clear();
         }
     }
 }

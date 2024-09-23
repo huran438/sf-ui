@@ -239,7 +239,9 @@ namespace SFramework.UI.Runtime
 
         public bool TryGetWidgetModel(string widget, out SFWidgetModel widgetModel)
         {
-            return _widgetModelById.TryGetValue(widget, out widgetModel);
+            if (_widgetModelById.TryGetValue(widget, out widgetModel)) return true;
+            SFDebug.Log(LogType.Warning, "Can't get widget model for widget {0}", widget);
+            return false;
         }
 
         public void UnregisterScreen(string screen)

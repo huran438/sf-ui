@@ -16,6 +16,8 @@ namespace SFramework.UI.Runtime
 
         public string Widget => _widget;
 
+        public string Screen => _screen;
+
         public int Index { get; set; }
 
         public RectTransform RectTransform { get; private set; }
@@ -23,6 +25,9 @@ namespace SFramework.UI.Runtime
         [SFWidget]
         [SerializeField]
         private string _widget;
+
+        private string _screen = string.Empty;
+        private SFWidgetModel _widgetModel;
 
         #region Virtual
 
@@ -240,23 +245,49 @@ namespace SFramework.UI.Runtime
         {
             UIService.RegisterWidget(_widget, this);
             UIService.OnWidgetPointerEvent += OnWidgetPointerEvent;
-            UIService.OnShowScreen += OnShowScreen;
-            UIService.OnCloseScreen += OnCloseScreen;
+            UIService.OnShowScreen += _OnShowScreen;
+            UIService.OnScreenShown += _OnScreenShown;
+            UIService.OnScreenClosed += _OnScreenClosed;
+            UIService.OnCloseScreen += _OnCloseScreen;
+            UIService.TryGetWidgetModel(_widget, out _widgetModel);
+
+            if (_widgetModel != null)
+            {
+                _screen = _widgetModel.Node.Parent.FullId;
+            }
         }
 
-        private void OnShowScreen(string screen, object[] parameters)
+        private void _OnScreenShown(string screen)
         {
-            if (!_widget.StartsWith(screen)) return;
-            ShowScreenEvent(parameters);
+            if(string.IsNullOrEmpty(_screen)) return;
+            if (screen != _screen) return;
+            OnScreenShown();
         }
-
-        private void OnCloseScreen(string screen)
+        
+        
+        private void _OnScreenClosed(string screen)
         {
-            if (!_widget.StartsWith(screen)) return;
-            CloseScreenEvent();
+            if(string.IsNullOrEmpty(_screen)) return;
+            if (screen != _screen) return;
+            OnScreenClosed();
         }
 
-        private void OnWidgetPointerEvent(string widget, int index, SFPointerEventType sfPointerEventType, PointerEventData eventData)
+        private void _OnShowScreen(string screen, object[] parameters)
+        {
+            if(string.IsNullOrEmpty(_screen)) return;
+            if (screen != _screen) return;
+            OnShowScreen(parameters);
+        }
+
+        private void _OnCloseScreen(string screen)
+        {
+            if(string.IsNullOrEmpty(_screen)) return;
+            if (screen != _screen) return;
+            OnCloseScreen();
+        }
+
+        private void OnWidgetPointerEvent(string widget, int index, SFPointerEventType sfPointerEventType,
+            PointerEventData eventData)
         {
             if (widget != _widget) return;
             if (index != Index) return;
@@ -299,18 +330,28 @@ namespace SFramework.UI.Runtime
             }
         }
 
-        protected virtual void ShowScreenEvent(object[] parameters)
+        protected virtual void OnShowScreen(object[] parameters)
         {
         }
 
-        protected virtual void CloseScreenEvent()
+        protected virtual void OnScreenShown()
+        {
+        }
+
+        protected virtual void OnCloseScreen()
+        {
+        }
+
+        protected virtual void OnScreenClosed()
         {
         }
 
         protected virtual void OnDestroy()
         {
-            UIService.OnShowScreen -= OnShowScreen;
-            UIService.OnCloseScreen -= OnCloseScreen;
+            UIService.OnScreenShown -= _OnScreenShown;
+            UIService.OnScreenClosed -= _OnScreenClosed;
+            UIService.OnShowScreen -= _OnShowScreen;
+            UIService.OnCloseScreen -= _OnCloseScreen;
             UIService.OnWidgetPointerEvent -= OnWidgetPointerEvent;
             UIService.UnregisterWidget(_widget, this);
         }

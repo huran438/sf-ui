@@ -12,7 +12,7 @@ namespace SFramework.UI.Runtime
         event Action<string> OnUnloadScreen;
         event Action<string> OnScreenUnloaded;
         event Action<string, object[]> OnShowScreen;
-        event Action<string> OnCloseScreen;
+        event Action<string, bool> OnCloseScreen;
         event Action<string> OnScreenShown;
         event Action<string> OnScreenClosed;
         event Action<string, SFBaseEventType, BaseEventData> OnWidgetBaseEvent;
@@ -40,7 +40,7 @@ namespace SFramework.UI.Runtime
         bool TryGetWidgetModel(string widget, out SFWidgetModel widgetModel);
         void UnregisterScreen(string screen);
         void ScreenShownCallback(string screen);
-        void ScreenClosedCallback(string screen);
+        void ScreenClosedCallback(string screen, bool unload);
         void WidgetEventCallback(string widget, SFBaseEventType eventType, BaseEventData eventData);
         void WidgetEventCallback(string widget, int index, SFPointerEventType eventType, PointerEventData eventData);
     }

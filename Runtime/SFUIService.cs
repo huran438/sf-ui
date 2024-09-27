@@ -17,11 +17,14 @@ namespace SFramework.UI.Runtime
         public event Action<string> OnUnloadScreen = _ => { };
         public event Action<string> OnScreenUnloaded = _ => { };
         public event Action<string, object[]> OnShowScreen = (_, _) => { };
-        public event Action<string> OnCloseScreen = _ => { };
+        public event Action<string, bool> OnCloseScreen = (_, _) => { };
         public event Action<string> OnScreenShown = _ => { };
         public event Action<string> OnScreenClosed = _ => { };
         public event Action<string, SFBaseEventType, BaseEventData> OnWidgetBaseEvent = (_, _, _) => { };
-        public event Action<string, int, SFPointerEventType, PointerEventData> OnWidgetPointerEvent = (_, _, _, _) => { };
+
+        public event Action<string, int, SFPointerEventType, PointerEventData> OnWidgetPointerEvent = (_, _, _, _) =>
+        {
+        };
 
         public SFScreenModel[] ScreenModels => _screenModels.Values.ToArray();
         public SFWidgetModel[] WidgetModels => _widgetModelById.Values.ToArray();
@@ -124,6 +127,13 @@ namespace SFramework.UI.Runtime
             if (!_operationHandleByScreen.ContainsKey(screen))
                 throw new Exception("Screen not loaded: " + screen);
             
+            
+            if (_screenModels[screen].State != SFScreenState.Closed)
+            {
+                _screenModels[screen].State = SFScreenState.Closed;
+                OnScreenClosed.Invoke(screen);
+            }
+
             OnUnloadScreen.Invoke(screen);
             Addressables.Release(_operationHandleByScreen[screen]);
             _operationHandleByScreen.Remove(screen);
@@ -135,7 +145,8 @@ namespace SFramework.UI.Runtime
             return ShowScreen(screen, null, default, parameters);
         }
 
-        public async UniTask ShowScreen(string screen, IProgress<float> progress = null, CancellationToken cancellationToken = default,
+        public async UniTask ShowScreen(string screen, IProgress<float> progress = null,
+            CancellationToken cancellationToken = default,
             params object[] parameters)
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
@@ -157,15 +168,7 @@ namespace SFramework.UI.Runtime
             if (!_screenViews.ContainsKey(screen)) return;
 
             _screenModels[screen].State = SFScreenState.Closing;
-            OnCloseScreen.Invoke(screen);
-            if (!unload) return;
-            if (_screenModels[screen].State != SFScreenState.Closed)
-            {
-                _screenModels[screen].State = SFScreenState.Closed;
-                OnScreenClosed.Invoke(screen);
-            }
-
-            UnloadScreen(screen);
+            OnCloseScreen.Invoke(screen, unload);
         }
 
         public bool TryGetScreenView(string screen, out SFScreenView screenView)
@@ -239,6 +242,12 @@ namespace SFramework.UI.Runtime
 
         public bool TryGetWidgetModel(string widget, out SFWidgetModel widgetModel)
         {
+            if (string.IsNullOrWhiteSpace(widget))
+            {
+                widgetModel = null;
+                return false;
+            }
+
             if (_widgetModelById.TryGetValue(widget, out widgetModel)) return true;
             SFDebug.Log(LogType.Warning, "Can't get widget model for widget {0}", widget);
             return false;
@@ -266,11 +275,16 @@ namespace SFramework.UI.Runtime
             OnScreenShown.Invoke(screen);
         }
 
-        public void ScreenClosedCallback(string screen)
+        public void ScreenClosedCallback(string screen, bool unload)
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
             _screenModels[screen].State = SFScreenState.Closed;
             OnScreenClosed.Invoke(screen);
+
+            if (unload)
+            {
+                UnloadScreen(screen);
+            }
         }
 
         public void WidgetEventCallback(string widget, SFBaseEventType eventType, BaseEventData eventData)
@@ -279,7 +293,8 @@ namespace SFramework.UI.Runtime
             OnWidgetBaseEvent.Invoke(widget, eventType, eventData);
         }
 
-        public void WidgetEventCallback(string widget, int index, SFPointerEventType eventType, PointerEventData eventData)
+        public void WidgetEventCallback(string widget, int index, SFPointerEventType eventType,
+            PointerEventData eventData)
         {
             if (string.IsNullOrWhiteSpace(widget)) return;
             OnWidgetPointerEvent.Invoke(widget, index, eventType, eventData);

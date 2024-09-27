@@ -40,6 +40,8 @@ namespace SFramework.UI.Runtime
 
         private SFWidgetView[] _widgets = Array.Empty<SFWidgetView>();
 
+        private bool _unloadOnClose;
+
         protected override void Awake()
         {
             _canvas = GetComponent<Canvas>();
@@ -87,7 +89,7 @@ namespace SFramework.UI.Runtime
 
         public void ScreenClosedCallback()
         {
-            _uiServiceInternal.ScreenClosedCallback(_screen);
+            _uiServiceInternal.ScreenClosedCallback(_screen, _unloadOnClose);
         }
 
         private void _onShowScreen(string screen, object[] parameters)
@@ -102,9 +104,10 @@ namespace SFramework.UI.Runtime
             OnScreenShown();
         }
 
-        private void _onCloseScreen(string screen)
+        private void _onCloseScreen(string screen, bool unload)
         {
             if (screen != _screen) return;
+            _unloadOnClose = unload;
             OnCloseScreen();
         }
 

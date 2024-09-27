@@ -279,7 +279,7 @@ namespace SFramework.UI.Runtime
             OnShowScreen(parameters);
         }
 
-        private void _OnCloseScreen(string screen)
+        private void _OnCloseScreen(string screen, bool unload)
         {
             if(string.IsNullOrEmpty(_screen)) return;
             if (screen != _screen) return;

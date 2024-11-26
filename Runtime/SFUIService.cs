@@ -22,9 +22,7 @@ namespace SFramework.UI.Runtime
         public event Action<string> OnScreenClosed = _ => { };
         public event Action<string, SFBaseEventType, BaseEventData> OnWidgetBaseEvent = (_, _, _) => { };
 
-        public event Action<string, int, SFPointerEventType, PointerEventData> OnWidgetPointerEvent = (_, _, _, _) =>
-        {
-        };
+        public event Action<string, int, SFPointerEventType, PointerEventData> OnWidgetPointerEvent = (_, _, _, _) => { };
 
         public SFScreenModel[] ScreenModels => _screenModels.Values.ToArray();
         public SFWidgetModel[] WidgetModels => _widgetModelById.Values.ToArray();
@@ -36,7 +34,7 @@ namespace SFramework.UI.Runtime
         private readonly Dictionary<string, SFScreenNode> _screenNodes = new();
         private readonly Dictionary<string, SFWidgetNode> _widgetNodes = new();
         private readonly Dictionary<string, List<SFWidgetView>> _widgetViews = new();
-
+        
         readonly Transform _parentTransform;
         private readonly ISFConfigsService _configsService;
 
@@ -114,7 +112,7 @@ namespace SFramework.UI.Runtime
 
             if (show)
             {
-                _screenModels[screen].State = SFScreenState.Showing;
+                _screenModels[screen].State = SFScreenState.Show;
                 OnShowScreen.Invoke(screen, parameters);
             }
         }
@@ -126,8 +124,8 @@ namespace SFramework.UI.Runtime
 
             if (!_operationHandleByScreen.ContainsKey(screen))
                 throw new Exception("Screen not loaded: " + screen);
-            
-            
+
+
             if (_screenModels[screen].State != SFScreenState.Closed)
             {
                 _screenModels[screen].State = SFScreenState.Closed;
@@ -150,9 +148,9 @@ namespace SFramework.UI.Runtime
             params object[] parameters)
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
-
-            _screenModels[screen].State = SFScreenState.Showing;
-
+            if(!_screenModels.TryGetValue(screen, out var screenModel)) return;
+            if(screenModel.State == SFScreenState.Show || screenModel.State == SFScreenState.Shown) return;
+            screenModel.State = SFScreenState.Show;
             if (!_operationHandleByScreen.ContainsKey(screen))
             {
                 await LoadScreen(screen, true, progress, cancellationToken, parameters);
@@ -165,9 +163,9 @@ namespace SFramework.UI.Runtime
         public void CloseScreen(string screen, bool unload = false)
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
-            if (!_screenViews.ContainsKey(screen)) return;
-
-            _screenModels[screen].State = SFScreenState.Closing;
+            if(!_screenModels.TryGetValue(screen, out var screenModel)) return;
+            if(screenModel.State == SFScreenState.Close || screenModel.State == SFScreenState.Closed) return;
+            screenModel.State = SFScreenState.Close;
             OnCloseScreen.Invoke(screen, unload);
         }
 
@@ -271,14 +269,18 @@ namespace SFramework.UI.Runtime
         public void ScreenShownCallback(string screen)
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
-            _screenModels[screen].State = SFScreenState.Shown;
+            if(!_screenModels.TryGetValue(screen, out var screenModel)) return;
+            if(screenModel.State == SFScreenState.Shown) return;
+            screenModel.State = SFScreenState.Shown;
             OnScreenShown.Invoke(screen);
         }
 
         public void ScreenClosedCallback(string screen, bool unload)
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
-            _screenModels[screen].State = SFScreenState.Closed;
+            if(!_screenModels.TryGetValue(screen, out var screenModel)) return;
+            if(screenModel.State == SFScreenState.Closed) return;
+            screenModel.State = SFScreenState.Closed;
             OnScreenClosed.Invoke(screen);
 
             if (unload)

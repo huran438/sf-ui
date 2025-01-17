@@ -16,8 +16,8 @@ namespace SFramework.UI.Runtime
     {
         public event Action<string> OnUnloadScreen = _ => { };
         public event Action<string> OnScreenUnloaded = _ => { };
-        public event Action<string, object[]> OnShowScreen = (_, _) => { };
-        public event Action<string, bool> OnCloseScreen = (_, _) => { };
+        public event Action<string, bool, object[]> OnShowScreen = (_, _, _) => { };
+        public event Action<string, bool, bool> OnCloseScreen = (_, _, _) => { };
         public event Action<string> OnScreenShown = _ => { };
         public event Action<string> OnScreenClosed = _ => { };
         public event Action<string, SFBaseEventType, BaseEventData> OnWidgetBaseEvent = (_, _, _) => { };
@@ -34,7 +34,7 @@ namespace SFramework.UI.Runtime
         private readonly Dictionary<string, SFScreenNode> _screenNodes = new();
         private readonly Dictionary<string, SFWidgetNode> _widgetNodes = new();
         private readonly Dictionary<string, List<SFWidgetView>> _widgetViews = new();
-        
+
         readonly Transform _parentTransform;
         private readonly ISFConfigsService _configsService;
 
@@ -73,7 +73,7 @@ namespace SFramework.UI.Runtime
         }
 
 
-        public async UniTask LoadScreen(string screen, bool show = false, IProgress<float> progress = null,
+        public async UniTask LoadScreen(string screen, bool show = false, bool force = false, IProgress<float> progress = null,
             CancellationToken cancellationToken = default, params object[] parameters)
         {
             if (string.IsNullOrEmpty(screen))
@@ -113,7 +113,7 @@ namespace SFramework.UI.Runtime
             if (show)
             {
                 _screenModels[screen].State = SFScreenState.Show;
-                OnShowScreen.Invoke(screen, parameters);
+                OnShowScreen.Invoke(screen, force, parameters);
             }
         }
 
@@ -140,33 +140,38 @@ namespace SFramework.UI.Runtime
 
         public UniTask ShowScreen(string screen, params object[] parameters)
         {
-            return ShowScreen(screen, null, default, parameters);
+            return ShowScreen(screen, false, null, CancellationToken.None, parameters);
         }
 
-        public async UniTask ShowScreen(string screen, IProgress<float> progress = null,
+        public UniTask ShowScreen(string screen, bool force, params object[] parameters)
+        {
+            return ShowScreen(screen, force, null, CancellationToken.None, parameters);
+        }
+
+        public async UniTask ShowScreen(string screen, bool force, IProgress<float> progress = null,
             CancellationToken cancellationToken = default,
             params object[] parameters)
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
-            if(!_screenModels.TryGetValue(screen, out var screenModel)) return;
-            if(screenModel.State == SFScreenState.Show || screenModel.State == SFScreenState.Shown) return;
+            if (!_screenModels.TryGetValue(screen, out var screenModel)) return;
+            if (screenModel.State == SFScreenState.Show || screenModel.State == SFScreenState.Shown) return;
             screenModel.State = SFScreenState.Show;
             if (!_operationHandleByScreen.ContainsKey(screen))
             {
-                await LoadScreen(screen, true, progress, cancellationToken, parameters);
+                await LoadScreen(screen, true, force, progress, cancellationToken, parameters);
                 return;
             }
 
-            OnShowScreen.Invoke(screen, parameters);
+            OnShowScreen.Invoke(screen, force, parameters);
         }
 
-        public void CloseScreen(string screen, bool unload = false)
+        public void CloseScreen(string screen, bool force, bool unload)
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
-            if(!_screenModels.TryGetValue(screen, out var screenModel)) return;
-            if(screenModel.State == SFScreenState.Close || screenModel.State == SFScreenState.Closed) return;
+            if (!_screenModels.TryGetValue(screen, out var screenModel)) return;
+            if (screenModel.State == SFScreenState.Close || screenModel.State == SFScreenState.Closed) return;
             screenModel.State = SFScreenState.Close;
-            OnCloseScreen.Invoke(screen, unload);
+            OnCloseScreen.Invoke(screen, force, unload);
         }
 
         public bool TryGetScreenView(string screen, out SFScreenView screenView)
@@ -269,8 +274,8 @@ namespace SFramework.UI.Runtime
         public void ScreenShownCallback(string screen)
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
-            if(!_screenModels.TryGetValue(screen, out var screenModel)) return;
-            if(screenModel.State == SFScreenState.Shown) return;
+            if (!_screenModels.TryGetValue(screen, out var screenModel)) return;
+            if (screenModel.State == SFScreenState.Shown) return;
             screenModel.State = SFScreenState.Shown;
             OnScreenShown.Invoke(screen);
         }
@@ -278,8 +283,8 @@ namespace SFramework.UI.Runtime
         public void ScreenClosedCallback(string screen, bool unload)
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
-            if(!_screenModels.TryGetValue(screen, out var screenModel)) return;
-            if(screenModel.State == SFScreenState.Closed) return;
+            if (!_screenModels.TryGetValue(screen, out var screenModel)) return;
+            if (screenModel.State == SFScreenState.Closed) return;
             screenModel.State = SFScreenState.Closed;
             OnScreenClosed.Invoke(screen);
 

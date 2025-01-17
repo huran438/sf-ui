@@ -66,20 +66,30 @@ namespace SFramework.UI.Runtime
         }
 
 
-        protected abstract void OnShowScreen([CanBeNull] object[] parameters);
+        protected abstract void OnShowScreen(bool force, [CanBeNull] object[] parameters);
         protected abstract void OnScreenShown();
-        protected abstract void OnCloseScreen();
+        protected abstract void OnCloseScreen(bool force, bool unload);
         protected abstract void OnScreenClosed();
         protected abstract void OnScreenDestroy();
 
+        public void ShowScreen(bool force)
+        {
+            _uiServiceInternal.ShowScreen(Screen, force);
+        }
+
         public void ShowScreen()
         {
-            _uiServiceInternal.ShowScreen(Screen);
+            _uiServiceInternal.ShowScreen(Screen, false);
+        }
+
+        public void CloseScreen(bool force, bool unload)
+        {
+            _uiServiceInternal.CloseScreen(Screen, force, unload);
         }
 
         public void CloseScreen()
         {
-            _uiServiceInternal.CloseScreen(Screen);
+            _uiServiceInternal.CloseScreen(Screen, false, false);
         }
 
         public void ScreenShownCallback()
@@ -92,10 +102,10 @@ namespace SFramework.UI.Runtime
             _uiServiceInternal.ScreenClosedCallback(_screen, _unloadOnClose);
         }
 
-        private void _onShowScreen(string screen, object[] parameters)
+        private void _onShowScreen(string screen, bool force, object[] parameters)
         {
             if (screen != _screen) return;
-            OnShowScreen(parameters);
+            OnShowScreen(force, parameters);
         }
 
         private void _onScreenShown(string screen)
@@ -104,11 +114,11 @@ namespace SFramework.UI.Runtime
             OnScreenShown();
         }
 
-        private void _onCloseScreen(string screen, bool unload)
+        private void _onCloseScreen(string screen, bool force, bool unload)
         {
             if (screen != _screen) return;
             _unloadOnClose = unload;
-            OnCloseScreen();
+            OnCloseScreen(force, unload);
         }
 
         private void _onScreenClosed(string screen)

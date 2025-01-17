@@ -11,25 +11,25 @@ namespace SFramework.UI.Runtime
     {
         event Action<string> OnUnloadScreen;
         event Action<string> OnScreenUnloaded;
-        event Action<string, object[]> OnShowScreen;
-        event Action<string, bool> OnCloseScreen;
+        event Action<string, bool, object[]> OnShowScreen;
+        event Action<string, bool, bool> OnCloseScreen;
         event Action<string> OnScreenShown;
         event Action<string> OnScreenClosed;
         event Action<string, SFBaseEventType, BaseEventData> OnWidgetBaseEvent;
-        event Action<string, int,SFPointerEventType, PointerEventData> OnWidgetPointerEvent;
+        event Action<string, int, SFPointerEventType, PointerEventData> OnWidgetPointerEvent;
         SFScreenModel[] ScreenModels { get; }
         SFWidgetModel[] WidgetModels { get; }
 
-        UniTask LoadScreen(string screen, bool show = false, IProgress<float> progress = null,
+        UniTask LoadScreen(string screen, bool show, bool force, IProgress<float> progress = null,
             CancellationToken cancellationToken = default, params object[] parameters);
 
         void UnloadScreen(string screen);
-        UniTask ShowScreen(string screen, params object[] parameters);
+        UniTask ShowScreen(string screen, bool force, params object[] parameters);
 
-        UniTask ShowScreen(string screen, IProgress<float> progress = null, CancellationToken cancellationToken = default,
+        UniTask ShowScreen(string screen, bool force, IProgress<float> progress = null, CancellationToken cancellationToken = default,
             params object[] parameters);
 
-        void CloseScreen(string screen, bool unload = false);
+        void CloseScreen(string screen, bool force, bool unload);
         bool TryGetScreenView(string screen, out SFScreenView screenView);
         bool TryGetScreenModel(string screen, out SFScreenModel screenModel);
         void RegisterScreen(string screen, SFScreenView root);

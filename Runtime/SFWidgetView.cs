@@ -1,4 +1,5 @@
 using System;
+using JetBrains.Annotations;
 using SFramework.Core.Runtime;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -259,31 +260,31 @@ namespace SFramework.UI.Runtime
 
         private void _OnScreenShown(string screen)
         {
-            if(string.IsNullOrEmpty(_screen)) return;
+            if (string.IsNullOrEmpty(_screen)) return;
             if (screen != _screen) return;
             OnScreenShown();
         }
-        
-        
+
+
         private void _OnScreenClosed(string screen)
         {
-            if(string.IsNullOrEmpty(_screen)) return;
+            if (string.IsNullOrEmpty(_screen)) return;
             if (screen != _screen) return;
             OnScreenClosed();
         }
 
-        private void _OnShowScreen(string screen, object[] parameters)
+        private void _OnShowScreen(string screen, bool force, object[] parameters)
         {
-            if(string.IsNullOrEmpty(_screen)) return;
+            if (string.IsNullOrEmpty(_screen)) return;
             if (screen != _screen) return;
-            OnShowScreen(parameters);
+            OnShowScreen(force, parameters);
         }
 
-        private void _OnCloseScreen(string screen, bool unload)
+        private void _OnCloseScreen(string screen, bool force, bool unload)
         {
-            if(string.IsNullOrEmpty(_screen)) return;
+            if (string.IsNullOrEmpty(_screen)) return;
             if (screen != _screen) return;
-            OnCloseScreen();
+            OnCloseScreen(force, unload);
         }
 
         private void OnWidgetPointerEvent(string widget, int index, SFPointerEventType sfPointerEventType,
@@ -330,7 +331,7 @@ namespace SFramework.UI.Runtime
             }
         }
 
-        protected virtual void OnShowScreen(object[] parameters)
+        protected virtual void OnShowScreen(bool force, [CanBeNull] object[] parameters)
         {
         }
 
@@ -338,7 +339,7 @@ namespace SFramework.UI.Runtime
         {
         }
 
-        protected virtual void OnCloseScreen()
+        protected virtual void OnCloseScreen(bool force, bool unload)
         {
         }
 

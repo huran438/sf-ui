@@ -250,11 +250,18 @@ namespace SFramework.UI.Runtime
             UIService.OnScreenShown += _OnScreenShown;
             UIService.OnScreenClosed += _OnScreenClosed;
             UIService.OnCloseScreen += _OnCloseScreen;
-            UIService.TryGetWidgetModel(_widget, out _widgetModel);
 
-            if (_widgetModel != null)
+            if (UIService.TryGetWidgetModel(_widget, out _widgetModel))
             {
                 _screen = _widgetModel.Node.Parent.FullId;
+            }
+            else
+            {
+                var screenView = GetComponentInParent<SFScreenView>();
+                if (screenView != null)
+                {
+                    _screen = screenView.Screen;
+                }
             }
         }
 

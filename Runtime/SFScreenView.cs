@@ -137,5 +137,10 @@ namespace SFramework.UI.Runtime
             _uiServiceInternal.OnScreenShown -= _onScreenShown;
             _uiServiceInternal.OnScreenClosed -= _onScreenClosed;
         }
+        public virtual void SetParameters(object[] parameters)
+        {
+            
+        }
+  
     }
 }

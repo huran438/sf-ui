@@ -29,13 +29,19 @@ namespace SFramework.UI.Runtime
         UniTask ShowScreen(string screen, bool force, IProgress<float> progress = null, CancellationToken cancellationToken = default,
             params object[] parameters);
 
+        void SetParameters(string screen, params object[] parameters);
+
         void CloseScreen(string screen, bool force, bool unload);
         bool TryGetScreenView(string screen, out SFScreenView screenView);
+        
+        bool TryGetScreenView<T>(string screen, out T screenView) where T : SFScreenView;
+        
         bool TryGetScreenModel(string screen, out SFScreenModel screenModel);
         void RegisterScreen(string screen, SFScreenView root);
         void RegisterWidget(string widget, SFWidgetView widgetView);
         void UnregisterWidget(string widget, SFWidgetView widgetView);
         bool TryGetWidgetView(string widget, int index, out SFWidgetView view);
+        bool TryGetWidgetView<T>(string widget, int index, out T view) where T : SFWidgetView;
         bool TryGetWidgetNode(string widget, out SFWidgetNode widgetNode);
         bool TryGetWidgetModel(string widget, out SFWidgetModel widgetModel);
         void UnregisterScreen(string screen);

@@ -165,6 +165,24 @@ namespace SFramework.UI.Runtime
             OnShowScreen.Invoke(screen, force, parameters);
         }
 
+        public void SetParameters(string screen, params object[] parameters)
+        {
+            if (parameters == null)
+            {
+                SFDebug.Log("Parameters NULL");
+                return;
+            }
+            
+            if (_screenViews.TryGetValue(screen, out var view))
+            {
+                view.SetParameters(parameters);
+            }
+            else
+            {
+                SFDebug.Log("Cant find view");
+            }
+        }
+
         public void CloseScreen(string screen, bool force, bool unload)
         {
             if (string.IsNullOrWhiteSpace(screen)) return;
@@ -177,6 +195,18 @@ namespace SFramework.UI.Runtime
         public bool TryGetScreenView(string screen, out SFScreenView screenView)
         {
             return _screenViews.TryGetValue(screen, out screenView);
+        }
+
+        public bool TryGetScreenView<T>(string screen, out T screenView) where T : SFScreenView
+        {
+            if (_screenViews.TryGetValue(screen, out var view))
+            {
+                screenView = view as T;
+                return screenView != null;
+            }
+
+            screenView = null;
+            return false;
         }
 
         public bool TryGetScreenModel(string screen, out SFScreenModel screenModel)
@@ -236,6 +266,18 @@ namespace SFramework.UI.Runtime
             index = Mathf.Clamp(index, 0, widgets.Count);
             view = widgets[index];
             return true;
+        }
+
+        public bool TryGetWidgetView<T>(string widget, int index, out T view) where T : SFWidgetView
+        {
+            if (TryGetWidgetView(widget, index, out var widgetView))
+            {
+                view = widgetView as T;
+                return view != null;
+            }
+
+            view = null;
+            return false;
         }
 
         public bool TryGetWidgetNode(string widget, out SFWidgetNode widgetNode)

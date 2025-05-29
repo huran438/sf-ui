@@ -6,8 +6,8 @@ namespace SFramework.UI.Runtime
     [Serializable]
     public class SFScreenModel : SFNodeModel<SFScreenNode>
     {
-        public SFScreenState State { get; internal set; }
-        public bool IsLoaded { get; internal set; }
+        public SFScreenState State { get; set; }
+        public bool IsLoaded { get; set; }
 
         public SFScreenModel(SFScreenNode node) : base(node)
         {

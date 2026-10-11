@@ -2,8 +2,6 @@
 
 # SF UI
 
-[Documentation website](https://docs.secretplace.studio/#sf-ui)
-
 ![Package](https://img.shields.io/badge/package-sp.sframework.ui-555555) ![Version](https://img.shields.io/badge/version-0.1.0-555555)
 
 SF UI manages config-defined screens and widgets in Unity. It instantiates screen prefabs through Addressables, tracks screen state, and routes Unity EventSystem input through `ISFUIService`. Screen subclasses implement visibility and transition behavior.

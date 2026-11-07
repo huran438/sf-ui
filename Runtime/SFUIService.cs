@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -12,7 +12,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 
 namespace SFramework.UI.Runtime
 {
-    public sealed class SFUIService : ISFUIService
+    public sealed partial class SFUIService : ISFUIService
     {
         public event Action<string> OnUnloadScreen = _ => { };
         public event Action<string> OnScreenUnloaded = _ => { };
@@ -31,55 +31,68 @@ namespace SFramework.UI.Runtime
 
         private readonly Dictionary<string, SFScreenModel> _screenModels = new();
         private readonly Dictionary<string, SFWidgetModel> _widgetModelById = new();
-        private readonly Dictionary<string, AsyncOperationHandle> _operationHandleByScreen = new();
+        private readonly Dictionary<string, ScreenLoad> _screenLoads = new();
         private readonly Dictionary<string, SFScreenView> _screenViews = new();
         private readonly Dictionary<string, SFScreenNode> _screenNodes = new();
         private readonly Dictionary<string, SFWidgetNode> _widgetNodes = new();
         private readonly Dictionary<string, List<SFWidgetView>> _widgetViews = new();
 
-        readonly Transform _parentTransform;
+        private Transform _parentTransform;
+        private Transform _loadingTransform;
         private readonly ISFConfigsService _configsService;
+        private int _pendingLoads;
+        private bool _disposed;
 
 
         SFUIService(ISFConfigsService configsService)
         {
-            _parentTransform = new GameObject("SFUI").GetComponent<Transform>();
+            _parentTransform = new GameObject("SFUI").transform;
             _configsService = configsService;
+        }
+
+        private Transform GetLoadingRoot()
+        {
+            if (_loadingTransform != null) return _loadingTransform;
+            var root = new GameObject("SFUI Loading Screens");
+            root.SetActive(false);
+            // Addressables can finish after a Single scene change. Keep late prefabs inactive.
+            if (Application.isPlaying) UnityEngine.Object.DontDestroyOnLoad(root);
+            return _loadingTransform = root.transform;
         }
 
         public async UniTask Init(CancellationToken cancellationToken)
         {
-            var preloadTasks = new List<UniTask>();
-
+            if (_disposed) throw new ObjectDisposedException(nameof(SFUIService));
+            cancellationToken.ThrowIfCancellationRequested();
             if (_configsService.TryGetConfigs(out SFUIConfig[] configs))
             {
                 foreach (var repository in configs)
                 {
-                    if (repository.Groups == null) continue;
+                    if (repository?.Groups == null) continue;
 
                     foreach (var groupNode in repository.Groups)
                     {
-                        if (groupNode.Screens == null) continue;
+                        if (groupNode?.Screens == null) continue;
 
                         foreach (var screenNode in groupNode.Screens)
                         {
-                            _screenNodes.TryAdd(screenNode.FullId, screenNode);
-                            _screenModels.TryAdd(screenNode.FullId, new SFScreenModel(screenNode));
-                            foreach (var widgetNode in screenNode.Widgets)
+                            if (screenNode == null || !_screenNodes.TryAdd(screenNode.FullId, screenNode)) continue;
+                            _screenModels.Add(screenNode.FullId, new SFScreenModel(screenNode));
+                            foreach (var widgetNode in screenNode.Widgets ?? Array.Empty<SFWidgetNode>())
                             {
+                                if (widgetNode == null) continue;
                                 _widgetNodes.TryAdd(widgetNode.FullId, widgetNode);
                                 _widgetModelById.TryAdd(widgetNode.FullId, new SFWidgetModel(widgetNode));
-                            }
-
-                            if (screenNode.Preload)
-                            {
-                                preloadTasks.Add(LoadScreen(screenNode.FullId, cancellationToken: cancellationToken));
                             }
                         }
                     }
                 }
             }
 
+            var preloadTasks = new List<UniTask>();
+            foreach (var screen in _screenNodes.Values)
+                if (screen.Preload)
+                    preloadTasks.Add(LoadScreen(screen.FullId, cancellationToken: cancellationToken));
             await UniTask.WhenAll(preloadTasks).AttachExternalCancellation(cancellationToken);
         }
 
@@ -88,48 +101,137 @@ namespace SFramework.UI.Runtime
             IProgress<float> progress = null,
             CancellationToken cancellationToken = default, params object[] parameters)
         {
+            if (_disposed) throw new ObjectDisposedException(nameof(SFUIService));
             if (string.IsNullOrEmpty(screen))
             {
                 SFDebug.Log(LogType.Warning, "[SFUI] - Unable to load screen. Id is empty!");
                 return;
             }
 
-            if (_operationHandleByScreen.TryGetValue(screen, out _)) return;
-
             if (!_screenNodes.TryGetValue(screen, out var screenNode))
             {
-                throw new NullReferenceException("Failed to load screen node: " + screen);
-            }
-
-            var handle = Addressables.InstantiateAsync(screenNode.Prefab, _parentTransform);
-
-            _operationHandleByScreen[screen] = handle;
-
-            while (!handle.IsDone && !cancellationToken.IsCancellationRequested)
-            {
-                progress?.Report(handle.PercentComplete);
-                await UniTask.Yield(cancellationToken);
-            }
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                Addressables.Release(handle);
-                _operationHandleByScreen.Remove(screen);
-                throw new OperationCanceledException();
-            }
-
-            if (handle.Status == AsyncOperationStatus.Failed)
-            {
-                Addressables.Release(handle);
-                _operationHandleByScreen.Remove(screen);
-                throw new NullReferenceException("Failed to load screen: " + screen);
+                throw new KeyNotFoundException($"Unknown screen '{screen}'.");
             }
 
             if (show)
             {
-                _screenModels[screen].State = SFScreenState.Show;
-                OnShowScreen.Invoke(screen, force, parameters);
+                await ShowScreen(screen, force, progress, cancellationToken, parameters);
+                return;
             }
+
+            await EnsureLoaded(screen, screenNode, progress, cancellationToken);
+        }
+
+        private async UniTask EnsureLoaded(string screen, SFScreenNode node, IProgress<float> progress,
+            CancellationToken cancellationToken)
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(SFUIService));
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (_screenLoads.TryGetValue(screen, out var load) && !load.Loading && load.View == null)
+            {
+                RemoveLoad(screen, load);
+                load = null;
+            }
+
+            if (load?.Unloading == true) throw new OperationCanceledException();
+
+            if (load == null)
+            {
+                if (TryGetScreenView(screen, out var view) && view != null) return;
+                load = new ScreenLoad();
+                _screenLoads.Add(screen, load);
+                InstantiateScreen(screen, node.Prefab, load).Forget();
+            }
+
+            load.Waiters++;
+            try
+            {
+                if (progress != null)
+                {
+                    while (load.Loading && OwnsLoad(screen, load))
+                    {
+                        if (load.Handle.IsValid()) progress.Report(load.Handle.PercentComplete);
+                        await UniTask.Yield(cancellationToken);
+                    }
+                }
+
+                await load.Completion.Task.AttachExternalCancellation(cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!OwnsLoad(screen, load)) throw new OperationCanceledException();
+                progress?.Report(1f);
+            }
+            finally
+            {
+                if (--load.Waiters == 0 && load.Loading && OwnsLoad(screen, load))
+                    RemoveLoad(screen, load);
+            }
+        }
+
+        private async UniTask InstantiateScreen(string screen, string key, ScreenLoad load)
+        {
+            _pendingLoads++;
+            try
+            {
+                if (_parentTransform == null) _parentTransform = new GameObject("SFUI").transform;
+                // A canceled load can finish later. Keep its prefab inactive until it still owns the slot.
+                load.Handle = Addressables.InstantiateAsync(key, GetLoadingRoot());
+                while (!load.Handle.IsDone) await UniTask.Yield();
+                if (!OwnsLoad(screen, load)) return;
+                if (load.Handle.Status != AsyncOperationStatus.Succeeded || load.Handle.Result == null)
+                    throw new InvalidOperationException($"Failed to load screen '{screen}' from '{key}'.",
+                        load.Handle.OperationException);
+
+                var instance = load.Handle.Result;
+                load.View = instance.GetComponentInChildren<SFScreenView>(true);
+                if (load.View == null || load.View.Screen != screen)
+                    throw new InvalidOperationException($"Prefab '{key}' must contain a screen view with ID '{screen}'.");
+                if (_parentTransform == null)
+                    throw new InvalidOperationException($"The UI root was destroyed while loading screen '{screen}'.");
+
+                instance.transform.SetParent(_parentTransform, false);
+                if (!OwnsLoad(screen, load)) return;
+                if (!TryGetScreenView(screen, out var registered) || registered != load.View)
+                    throw new InvalidOperationException($"Screen '{screen}' did not register its active view.");
+
+                load.Loading = false;
+                load.Completion.TrySetResult();
+            }
+            catch (Exception error)
+            {
+                if (OwnsLoad(screen, load))
+                {
+                    RemoveLoad(screen, load, error);
+                }
+            }
+            finally
+            {
+                load.Loading = false;
+                if (!OwnsLoad(screen, load)) ReleaseHandle(load);
+                if (--_pendingLoads == 0 && _disposed) DestroyRoot(_loadingTransform);
+            }
+        }
+
+        private bool OwnsLoad(string screen, ScreenLoad load) =>
+            _screenLoads.TryGetValue(screen, out var current) && current == load;
+
+        private void RemoveLoad(string screen, ScreenLoad load, Exception error = null)
+        {
+            _screenLoads.Remove(screen);
+            if (load.View != null) load.View.DetachFromService();
+            if (TryGetScreenView(screen, out var view) && ReferenceEquals(view, load.View))
+                UnregisterScreen(screen);
+
+            if (!load.Loading) ReleaseHandle(load);
+            if (error == null) load.Completion.TrySetCanceled();
+            else load.Completion.TrySetException(error);
+        }
+
+        private static void ReleaseHandle(ScreenLoad load)
+        {
+            var handle = load.Handle;
+            load.Handle = default;
+            if (handle.IsValid()) Addressables.Release(handle);
         }
 
         public void UnloadScreen(string screen)
@@ -137,19 +239,28 @@ namespace SFramework.UI.Runtime
             if (string.IsNullOrEmpty(screen))
                 throw new ArgumentNullException(nameof(screen));
 
-            if (!_operationHandleByScreen.ContainsKey(screen))
+            if (!_screenLoads.TryGetValue(screen, out var load))
                 throw new Exception("Screen not loaded: " + screen);
+            if (load.Unloading) return;
+            load.Unloading = true;
 
-
-            if (_screenModels[screen].State != SFScreenState.Closed)
+            var model = _screenModels[screen];
+            model.ShowRevision++;
+            try
             {
-                _screenModels[screen].State = SFScreenState.Closed;
-                OnScreenClosed.Invoke(screen);
+                if (model.State != SFScreenState.Closed)
+                {
+                    model.State = SFScreenState.Closed;
+                    OnScreenClosed.Invoke(screen);
+                }
+
+                OnUnloadScreen.Invoke(screen);
+            }
+            finally
+            {
+                if (OwnsLoad(screen, load)) RemoveLoad(screen, load);
             }
 
-            OnUnloadScreen.Invoke(screen);
-            Addressables.Release(_operationHandleByScreen[screen]);
-            _operationHandleByScreen.Remove(screen);
             OnScreenUnloaded.Invoke(screen);
         }
 
@@ -175,14 +286,21 @@ namespace SFramework.UI.Runtime
 
             if (!_screenModels.TryGetValue(screen, out var screenModel)) return;
             if (screenModel.State == SFScreenState.Show || screenModel.State == SFScreenState.Shown) return;
-            screenModel.State = SFScreenState.Show;
-            if (!_operationHandleByScreen.ContainsKey(screen))
-            {
-                await LoadScreen(screen, true, force, progress, cancellationToken, parameters);
-                return;
-            }
+            var revision = screenModel.ShowRevision;
+            await EnsureLoaded(screen, screenModel.Node, progress, cancellationToken);
+            if (_disposed || revision != screenModel.ShowRevision ||
+                screenModel.State == SFScreenState.Show || screenModel.State == SFScreenState.Shown) return;
 
-            OnShowScreen.Invoke(screen, force, parameters);
+            screenModel.State = SFScreenState.Show;
+            try
+            {
+                OnShowScreen.Invoke(screen, force, parameters);
+            }
+            catch
+            {
+                if (screenModel.State == SFScreenState.Show) screenModel.State = SFScreenState.Closed;
+                throw;
+            }
         }
 
         public void SetParameters(string screen, params object[] parameters)
@@ -212,7 +330,13 @@ namespace SFramework.UI.Runtime
             }
 
             if (!_screenModels.TryGetValue(screen, out var screenModel)) return;
-            if (screenModel.State == SFScreenState.Close || screenModel.State == SFScreenState.Closed) return;
+            screenModel.ShowRevision++;
+            if (screenModel.State == SFScreenState.Closed)
+            {
+                if (unload && _screenLoads.TryGetValue(screen, out var load) && load.Loading) UnloadScreen(screen);
+                return;
+            }
+            if (screenModel.State == SFScreenState.Close) return;
             screenModel.State = SFScreenState.Close;
             OnCloseScreen.Invoke(screen, force, unload);
         }
@@ -241,22 +365,24 @@ namespace SFramework.UI.Runtime
 
         public void RegisterScreen(string screen, SFScreenView root)
         {
+            if (_disposed) return;
             if (string.IsNullOrEmpty(screen))
             {
                 SFDebug.Log(LogType.Warning, "[SFUI] - Unable to register screen. Id is empty!");
                 return;
             }
 
-            _screenModels[screen].State = SFScreenState.Closed;
+            if (root == null || !TryGetScreenModel(screen, out var model)) return;
+            if (_screenViews.TryGetValue(screen, out var existing) && existing != null) return;
+
+            model.State = SFScreenState.Closed;
             _screenViews[screen] = root;
-            if (TryGetScreenModel(screen, out var model))
-            {
-                model.IsLoaded = true;
-            }
+            model.IsLoaded = true;
         }
 
         public void RegisterWidget(string widget, SFWidgetView widgetView)
         {
+            if (_disposed) return;
             if (string.IsNullOrEmpty(widget))
             {
                 SFDebug.Log(LogType.Warning, "[SFUI] - Unable to register widget. Id is empty!");
@@ -284,15 +410,20 @@ namespace SFramework.UI.Runtime
 
         public void UnregisterWidget(string widget, SFWidgetView widgetView)
         {
+            if (_disposed) return;
             if (string.IsNullOrEmpty(widget))
             {
                 SFDebug.Log(LogType.Warning, "[SFUI] - Unable to unregister widget. Id is empty!");
                 return;
             }
 
-            if (_widgetViews.ContainsKey(widget))
+            if (_widgetViews.TryGetValue(widget, out var views))
             {
-                _widgetViews.Remove(widget);
+                views.Remove(widgetView);
+                if (views.Count == 0)
+                {
+                    _widgetViews.Remove(widget);
+                }
             }
 
             if (TryGetWidgetModel(widget, out var model))
@@ -306,7 +437,8 @@ namespace SFramework.UI.Runtime
             view = null;
             if (string.IsNullOrEmpty(widget)) return false;
             if (!_widgetViews.TryGetValue(widget, out var widgets)) return false;
-            index = Mathf.Clamp(index, 0, widgets.Count);
+            if (widgets.Count == 0) return false;
+            index = Mathf.Clamp(index, 0, widgets.Count - 1);
             view = widgets[index];
             return true;
         }
@@ -349,17 +481,16 @@ namespace SFramework.UI.Runtime
                 return;
             }
 
-            _screenModels[screen].State = SFScreenState.Closed;
-
-            if (_screenViews.ContainsKey(screen))
-            {
-                _screenViews.Remove(screen);
-            }
-
+            var wasRegistered = _screenViews.Remove(screen, out var view);
             if (TryGetScreenModel(screen, out var model))
             {
+                model.State = SFScreenState.Closed;
                 model.IsLoaded = false;
             }
+
+            // Unity can destroy this view during a scene change while the service stays alive.
+            if (wasRegistered && _screenLoads.TryGetValue(screen, out var load) && ReferenceEquals(view, load.View))
+                RemoveLoad(screen, load);
         }
 
         public void ScreenShownCallback(string screen)
@@ -379,7 +510,7 @@ namespace SFramework.UI.Runtime
             screenModel.State = SFScreenState.Closed;
             OnScreenClosed.Invoke(screen);
 
-            if (unload)
+            if (unload && screenModel.State == SFScreenState.Closed && _screenLoads.ContainsKey(screen))
             {
                 UnloadScreen(screen);
             }
@@ -400,7 +531,39 @@ namespace SFramework.UI.Runtime
 
         public void Dispose()
         {
-            // TODO release managed resources here
+            if (_disposed) return;
+            _disposed = true;
+
+            foreach (var entry in _screenLoads.ToArray()) RemoveLoad(entry.Key, entry.Value);
+            foreach (var view in _screenViews.Values.ToArray())
+                if (view != null) view.DetachFromService();
+            foreach (var model in _widgetModelById.Values) model.Dispose();
+
+            _screenViews.Clear();
+            _screenModels.Clear();
+            _screenNodes.Clear();
+            _widgetViews.Clear();
+            _widgetModelById.Clear();
+            _widgetNodes.Clear();
+            DestroyRoot(_parentTransform);
+            if (_pendingLoads == 0) DestroyRoot(_loadingTransform);
+        }
+
+        private static void DestroyRoot(Transform root)
+        {
+            if (root == null) return;
+            if (Application.isPlaying) UnityEngine.Object.Destroy(root.gameObject);
+            else UnityEngine.Object.DestroyImmediate(root.gameObject);
+        }
+
+        private sealed class ScreenLoad
+        {
+            public readonly UniTaskCompletionSource Completion = new();
+            public AsyncOperationHandle<GameObject> Handle;
+            public SFScreenView View;
+            public bool Loading = true;
+            public bool Unloading;
+            public int Waiters;
         }
     }
 }

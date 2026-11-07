@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using JetBrains.Annotations;
 using SFramework.Core.Runtime;
 using UnityEngine;
@@ -10,7 +11,7 @@ namespace SFramework.UI.Runtime
     [RequireComponent(typeof(Canvas))]
     [RequireComponent(typeof(CanvasGroup))]
     [RequireComponent(typeof(GraphicRaycaster))]
-    public abstract class SFScreenView : SFView
+    public abstract partial class SFScreenView : SFView
     {
         public Canvas Canvas => _canvas;
 
@@ -35,6 +36,7 @@ namespace SFramework.UI.Runtime
         private CanvasGroup _canvasGroup;
         private GraphicRaycaster _graphicRaycaster;
         private ISFUIService _uiServiceInternal;
+        private ISFUIService RegisteredService { get; set; }
 
         protected IEnumerable<SFWidgetView> Widgets => _widgets;
 
@@ -54,15 +56,28 @@ namespace SFramework.UI.Runtime
             base.Awake();
         }
 
-        [SFInject]
         public void _InitializeScreenInternal(ISFUIService uiController)
         {
+            if (RegisteredService == uiController && RegisteredService != null) return;
+            DetachFromService();
             _uiServiceInternal = uiController;
-            _uiServiceInternal.RegisterScreen(_screen, this);
-            _uiServiceInternal.OnShowScreen += _onShowScreen;
-            _uiServiceInternal.OnCloseScreen += _onCloseScreen;
-            _uiServiceInternal.OnScreenShown += _onScreenShown;
-            _uiServiceInternal.OnScreenClosed += _onScreenClosed;
+            if (uiController == null) return;
+
+            uiController.RegisterScreen(_screen, this);
+            if (string.IsNullOrEmpty(_screen) ||
+                !uiController.TryGetScreenView(_screen, out var registered) || registered != this) return;
+
+            RegisteredService = uiController;
+            uiController.OnShowScreen += _onShowScreen;
+            uiController.OnCloseScreen += _onCloseScreen;
+            uiController.OnScreenShown += _onScreenShown;
+            uiController.OnScreenClosed += _onScreenClosed;
+        }
+
+        protected override void OnDependenciesInjected()
+        {
+            _InitializeScreenInternal(_uiServiceInternal);
+            base.OnDependenciesInjected();
         }
 
 
@@ -74,12 +89,12 @@ namespace SFramework.UI.Runtime
 
         public void ShowScreen(bool force)
         {
-            _uiServiceInternal.ShowScreen(Screen, force);
+            _uiServiceInternal.ShowScreen(Screen, force).Forget();
         }
 
         public void ShowScreen()
         {
-            _uiServiceInternal.ShowScreen(Screen, false);
+            ShowScreen(false);
         }
 
         public void CloseScreen(bool force, bool unload)
@@ -94,12 +109,14 @@ namespace SFramework.UI.Runtime
 
         public void ScreenShownCallback()
         {
-            _uiServiceInternal.ScreenShownCallback(_screen);
+            if (RegisteredService != null && State == SFScreenState.Show)
+                RegisteredService.ScreenShownCallback(_screen);
         }
 
         public void ScreenClosedCallback()
         {
-            _uiServiceInternal.ScreenClosedCallback(_screen, _unloadOnClose);
+            if (RegisteredService != null && State == SFScreenState.Close)
+                RegisteredService.ScreenClosedCallback(_screen, _unloadOnClose);
         }
 
         private void _onShowScreen(string screen, bool force, object[] parameters)
@@ -130,12 +147,27 @@ namespace SFramework.UI.Runtime
         protected virtual void OnDestroy()
         {
             if (!Application.isPlaying) return;
-            OnScreenDestroy();
-            _uiServiceInternal.UnregisterScreen(_screen);
-            _uiServiceInternal.OnShowScreen -= _onShowScreen;
-            _uiServiceInternal.OnCloseScreen -= _onCloseScreen;
-            _uiServiceInternal.OnScreenShown -= _onScreenShown;
-            _uiServiceInternal.OnScreenClosed -= _onScreenClosed;
+            try
+            {
+                OnScreenDestroy();
+            }
+            finally
+            {
+                DetachFromService();
+            }
+        }
+
+        internal void DetachFromService()
+        {
+            var service = RegisteredService;
+            if (service == null) return;
+            RegisteredService = null;
+            service.OnShowScreen -= _onShowScreen;
+            service.OnCloseScreen -= _onCloseScreen;
+            service.OnScreenShown -= _onScreenShown;
+            service.OnScreenClosed -= _onScreenClosed;
+            if (service.TryGetScreenView(_screen, out var registered) && ReferenceEquals(registered, this))
+                service.UnregisterScreen(_screen);
         }
         public virtual void SetParameters(object[] parameters)
         {

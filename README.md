@@ -2,21 +2,15 @@
 
 # SF UI
 
-![Package](https://img.shields.io/badge/package-sp.sframework.ui-555555) ![Version](https://img.shields.io/badge/version-0.1.0-555555)
+![Package](https://img.shields.io/badge/UPM-sp.sframework.ui-5865f2) ![Version](https://img.shields.io/badge/version-0.1.0-5865f2)
+
+## Overview
 
 SF UI manages config-defined screens and widgets in Unity. It instantiates screen prefabs through Addressables, tracks screen state, and routes Unity EventSystem input through `ISFUIService`. Screen subclasses implement visibility and transition behavior.
 
 Use it for menus that load on demand, reusable widget views, and controllers that need screen or widget events without holding prefab references.
 
-[Install](#install) · [Configure](#configure) · [Screen implementation](#screen-implementation) · [API](#api) · [Limitations](#limitations)
-
-## Install
-
-In Unity Package Manager, select **Add package from git URL** and enter:
-
-```text
-https://github.com/huran438/sf-ui.git#main
-```
+## Requirements
 
 The [manifest](package.json) declares no dependencies. Install these separately:
 
@@ -32,9 +26,21 @@ The [manifest](package.json) declares no dependencies. Install these separately:
 
 Your assembly must reference `SFramework.UI.Runtime` and any SF assemblies your code uses. The source also imports `JetBrains.Annotations`. Ensure those annotations and the Unity UI assemblies resolve in your Unity setup.
 
-`package.json` lists Unity `2019.4`, but the source uses newer C# syntax and SF Core uses `destroyCancellationToken`. Treat that value as package metadata, not a tested compatibility floor.
+The package targets Unity 6000.0 and later.
 
-## Configure
+This package has no package-specific scripting define requirement.
+
+## Installation
+
+In Unity Package Manager, select **Add package from git URL** and enter:
+
+```text
+https://github.com/huran438/sf-ui.git#main
+```
+
+## Quick start
+
+### Configuration
 
 Save this as a JSON TextAsset under a `Resources` folder, for example `Assets/Resources/SFramework/UI.json`. Keep `Type` first: SF Configs checks the first or last JSON property to identify a config.
 
@@ -90,7 +96,7 @@ public sealed class UIContext : SFContextRoot
 
 Add this context to your startup scene. Call screen APIs after its initialization; other code can await `context.WaitForInitialization()`.
 
-## Screen implementation
+### Screen implementation
 
 Save this class as `InventoryScreen.cs` and attach it to the Addressable prefab. This example completes each transition immediately. An animated screen should invoke each callback after its animation finishes.
 
@@ -141,7 +147,7 @@ The [interface](Runtime/ISFUIService.cs) extends `ISFService`, including `UniTas
 | `void UnloadScreen(string screen)` | Releases the stored Addressables handle; throws if no handle exists. |
 | `bool TryGetScreenView(string screen, out SFScreenView screenView)` / `bool TryGetScreenView<T>(string screen, out T screenView) where T : SFScreenView` | Looks up a registered view. |
 | `bool TryGetScreenModel(string screen, out SFScreenModel screenModel)` | Looks up state and `IsLoaded`. |
-| `bool TryGetWidgetView(string widget, int index, out SFWidgetView view)` / `bool TryGetWidgetView<T>(string widget, int index, out T view) where T : SFWidgetView` | Looks up a registered widget instance. Validate the index first. |
+| `bool TryGetWidgetView(string widget, int index, out SFWidgetView view)` / `bool TryGetWidgetView<T>(string widget, int index, out T view) where T : SFWidgetView` | Looks up a registered widget instance, clamping the index to available views. Missing IDs return `false` and `null`; the generic overload also checks the view type. |
 | `bool TryGetWidgetNode(string widget, out SFWidgetNode widgetNode)` / `bool TryGetWidgetModel(string widget, out SFWidgetModel widgetModel)` | Looks up config or the model's `Views` list. |
 | `void RegisterScreen(string screen, SFScreenView root)` / `void UnregisterScreen(string screen)` | View lifecycle hooks; screen ID must exist in config. |
 | `void RegisterWidget(string widget, SFWidgetView widgetView)` / `void UnregisterWidget(string widget, SFWidgetView widgetView)` | Widget lifecycle hooks. |
@@ -159,23 +165,31 @@ The [interface](Runtime/ISFUIService.cs) extends `ISFService`, including `UniTas
 | `OnWidgetBaseEvent` | `Action<string, SFBaseEventType, BaseEventData>` |
 | `OnWidgetPointerEvent` | `Action<string, int, SFPointerEventType, PointerEventData>` |
 
-## Limitations
+## Behavior and limitations
 
 - `SFUICloseBehaviour` defines `DisableCanvas`, `DisableObject`, and `Unload`, but `SFUIService` does not read the config's `CloseBehaviour`. Implement visibility in your screen and pass `unload` to `CloseScreen` when needed.
-- `TryGetWidgetView` clamps to `widgets.Count`, then indexes the list. An index equal to or above the count can throw. `UnregisterWidget` removes the whole ID entry, even when other views share it; the model removes only the specified view.
-- Loading the same screen while its handle already exists returns without awaiting the existing operation. Coordinate concurrent show/load calls. Loading failure can leave the model in `Show` after `ShowScreen` sets the state.
-- `Dispose()` does not unload screens or destroy the `SFUI` parent. The service creates that parent without `DontDestroyOnLoad`; plan scene changes and cleanup in your application.
-- `HasParameter` in [SFExtensions](Runtime/SFExtensions.cs) always returns `false`. `TryGetParameterValue` assumes the matching string contains `=` and indexes its split result.
+- Multiple views can share a widget ID. Lookup clamps a negative index to the first view and an index at or above the count to the last view; unregistering one view preserves the remaining registrations.
+- Requests for the same screen share a pending load. The view must register before the service sends the show request. A canceled caller stops waiting independently. When the last caller cancels, the late instance stays inactive and its handle is released after the operation settles. Failed loads can be retried.
+- When Unity destroys a registered screen during a scene change, the service releases the handle owned by that view. `Dispose()` releases any remaining loaded screens, cancels pending requests, and destroys the `SFUI` root. The inactive staging root stays alive until outstanding Addressables operations release their instances.
+- `HasParameter` in [SFExtensions](Runtime/SFExtensions.cs) recognizes exact keys in bare flags and `key=value` entries. `TryGetParameterValue` requires `=` and preserves everything after the first separator.
 
 For missing screens, check the complete config ID, the prefab address, and config initialization order. A visible screen stuck in `Show` needs `ScreenShownCallback`; a closed screen stuck in `Close` needs `ScreenClosedCallback`.
 
-## Source and related modules
+## Tests
 
-[Service](Runtime/SFUIService.cs) · [Screen base](Runtime/SFScreenView.cs) · [Widget base](Runtime/SFWidgetView.cs) · [Config](Runtime/SFUIConfig.cs) · [Assembly](Runtime/SFramework.UI.Runtime.asmdef)
+Package tests are in [Tests/Editor](Tests/Editor) and use the `SFramework.UI.Editor.Tests` assembly. Install Unity Test Framework (`com.unity.test-framework`) in the host project. Test assemblies are Editor-only and gated by `UNITY_INCLUDE_TESTS`.
 
-[SF Core](https://github.com/huran438/sf-core) provides the lifecycle; [SF Configs](https://github.com/huran438/sf-configs) loads the JSON tree; [SF Scenes](https://github.com/huran438/sf-scenes) manages additive scene loading.
+Add `sp.sframework.ui` to the top-level `testables` array in the host project's `Packages/manifest.json`, preserving its dependencies and any existing testable entries:
 
-Documentation reflects source snapshot `20dbb4860c12058eca642ce1b2f8ae5e6842eda3`. API and dependency checks were static; no Unity compile, play-mode run, or Addressables build was performed.
+```json
+{
+  "testables": ["sp.sframework.ui"]
+}
+```
+
+Open **Window > General > Test Runner**, select **EditMode**, and run `SFramework.UI.Editor.Tests`. The `sf-demo` host enables all SFramework package tests in its manifest.
+
+The EditMode suite exercises model, registration, and transition state behavior. It does not validate rendered layouts, EventSystem input, animated transitions, Addressables catalogs, or player builds.
 
 ## License
 

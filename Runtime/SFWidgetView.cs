@@ -7,13 +7,12 @@ using Object = UnityEngine.Object;
 
 namespace SFramework.UI.Runtime
 {
-    public abstract class SFWidgetView : SFView, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler,
+    public abstract partial class SFWidgetView : SFView, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler,
         IPointerUpHandler, IPointerClickHandler, IInitializePotentialDragHandler, IBeginDragHandler, IDragHandler,
         IEndDragHandler, IDropHandler, IScrollHandler, IUpdateSelectedHandler, ISelectHandler, IDeselectHandler,
         IMoveHandler, ISubmitHandler, ICancelHandler
     {
-        [SFInject]
-        protected readonly ISFUIService UIService;
+        protected ISFUIService UIService;
 
         public string Widget => _widget;
 
